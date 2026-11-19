@@ -1,0 +1,10 @@
+numpy>=2.0
+scipy>=1.14
+pandas>=2.2
+scikit-learn>=1.5
+matplotlib>=3.9
+snowballstemmer>=2.2
+streamlit>=1.40      # demo app only
+pytest>=8.0          # tests only
+# Optional, for dense retrieval / reranking (needs Hugging Face access):
+# sentence-transformers>=3.0

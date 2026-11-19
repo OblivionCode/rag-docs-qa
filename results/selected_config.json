@@ -1,0 +1,15 @@
+{
+  "chunking": {
+    "strategy": "section",
+    "size": 200,
+    "with_heading": true
+  },
+  "n_chunks": 954,
+  "bm25": {
+    "k1": 1.5,
+    "b": 0.6,
+    "stem": true
+  },
+  "lsa_dim": 256,
+  "seed": 42
+}

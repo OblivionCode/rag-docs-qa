@@ -1,0 +1,9 @@
+{
+  "mode": "extractive",
+  "n_answerable": 51,
+  "citation_ok": 0.9607843137254902,
+  "cited_gold": 0.7058823529411765,
+  "abstained_on_answerable": 0.0,
+  "n_unanswerable": 10,
+  "abstain_rate_on_unanswerable": 0.0
+}

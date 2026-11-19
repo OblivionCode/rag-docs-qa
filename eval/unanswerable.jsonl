@@ -1,0 +1,10 @@
+{"id": "u01", "question": "What is the capital of France?"}
+{"id": "u02", "question": "How do I fine-tune a large language model with LoRA adapters?"}
+{"id": "u03", "question": "How do I deploy a Django application to a production server?"}
+{"id": "u04", "question": "What does PyTorch's autograd engine do during the backward pass?"}
+{"id": "u05", "question": "How do I train a convolutional network for semantic image segmentation in TensorFlow?"}
+{"id": "u06", "question": "What is the difference between an SQL inner join and a left join?"}
+{"id": "u07", "question": "How do I configure the DART booster in XGBoost?"}
+{"id": "u08", "question": "What is the best way to store a pandas DataFrame in Parquet with partitioning?"}
+{"id": "u09", "question": "How do I write a React component that fetches data with hooks?"}
+{"id": "u10", "question": "Who won the 2018 FIFA World Cup?"}
