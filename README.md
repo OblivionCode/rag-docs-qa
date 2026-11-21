@@ -7,11 +7,8 @@ intervals, and an honest look at what worked and what did not.
 
 ![Retrieval comparison on the test split](results/test_retrieval_comparison.png)
 
-**Headline:** tuned BM25 over section-aware chunks was the strongest retriever I could run:
-**Recall@5 = 0.78, MRR@10 = 0.67** on 51 held-out questions (95% CI 0.55 to 0.78). It beat TF-IDF,
-LSA, averaged GloVe vectors and three of four hybrids with statistical significance. A hybrid of
-BM25 and LSA was statistically indistinguishable from it. Dense transformer retrievers and LLM answer
-generation are implemented but **not evaluated here** (see [What I did not run](#what-i-did-not-run)).
+**Headline:** tuned BM25 over section-aware chunks had the best MRR@10 (0.67, 95% CI 0.55 to 0.78) and Recall@5 of 0.78 on 51 held-out questions. A hybrid of BM25 and a small dense embedding model (bge-small-en-v1.5) had the highest Recall@5 (0.88; +0.10 over BM25 in an exploratory paired test, CI 0.02 to 0.18) and nDCG@10 (0.58), but its MRR was not significantly different from BM25's, and it was roughly
+200 times slower per query on CPU (314 ms vs 1.3 ms). Dense retrieval alone (MRR 0.59) was also not significantly different from BM25. TF-IDF, LSA, averaged GloVe vectors and three of the other hybrids were significantly worse. LLM answer generation is implemented but not evaluated (see [What I did not run](#what-i-did-not-run)).
 
 ## What is in the pipeline
 
@@ -46,36 +43,42 @@ generation are implemented but **not evaluated here** (see [What I did not run](
 
 | Retriever | Recall@1 | Recall@5 | Recall@10 | MRR@10 | nDCG@10 | ms/query |
 |---|---|---|---|---|---|---|
-| **BM25** (k1=1.5, b=0.6, stemming) | 0.57 | 0.78 (0.65-0.88) | 0.88 | **0.671** (0.55-0.78) | 0.566 | 0.5 |
-| Hybrid BM25 + LSA | 0.49 | 0.80 (0.69-0.90) | 0.88 | 0.627 (0.51-0.73) | 0.554 | 2.2 |
-| LSA (256 dims) | 0.33 | 0.73 (0.61-0.84) | 0.84 | 0.494 (0.39-0.60) | 0.466 | 1.7 |
-| Hybrid all four | 0.33 | 0.73 (0.59-0.84) | 0.86 | 0.482 (0.37-0.58) | 0.448 | 3.9 |
-| TF-IDF (1-2 grams) | 0.29 | 0.71 (0.57-0.82) | 0.84 | 0.458 (0.36-0.56) | 0.416 | 1.0 |
-| Hybrid BM25 + LSA + GloVe | 0.33 | 0.61 (0.47-0.75) | 0.80 | 0.450 (0.33-0.56) | 0.397 | 2.3 |
-| Hybrid BM25 + GloVe | 0.33 | 0.47 (0.33-0.61) | 0.61 | 0.408 (0.28-0.53) | 0.327 | 0.7 |
-| GloVe average | 0.08 | 0.29 (0.18-0.41) | 0.33 | 0.163 (0.09-0.25) | 0.144 | 0.1 |
-| Random | 0.00 | 0.00 | 0.00 | 0.000 | 0.000 | 0.0 |
+| **BM25** (k1=1.5, b=0.6, stemming) | 0.57 | 0.78 (0.65-0.88) | 0.88 | **0.671** (0.55-0.78) | 0.566 | 1.3 |
+| Hybrid BM25 + dense (bge-small-en-v1.5) | 0.51 | **0.88** (0.78-0.96) | 0.88 | 0.657 (0.54-0.76) | **0.579** | 313.6 |
+| Hybrid BM25 + LSA | 0.51 | 0.80 (0.69-0.90) | 0.88 | 0.636 (0.52-0.75) | 0.557 | 3.7 |
+| Dense (bge-small-en-v1.5) | 0.45 | 0.75 (0.61-0.86) | 0.82 | 0.589 (0.46-0.70) | 0.506 | 214.2 |
+| LSA (256 dims) | 0.33 | 0.73 (0.61-0.84) | 0.84 | 0.494 (0.39-0.60) | 0.466 | 2.6 |
+| Hybrid all four | 0.33 | 0.73 (0.59-0.84) | 0.86 | 0.482 (0.37-0.58) | 0.448 | 6.0 |
+| TF-IDF (1-2 grams) | 0.29 | 0.71 (0.57-0.82) | 0.84 | 0.458 (0.36-0.56) | 0.416 | 1.6 |
+| Hybrid BM25 + LSA + GloVe | 0.33 | 0.61 (0.47-0.75) | 0.80 | 0.450 (0.33-0.56) | 0.397 | 3.8 |
+| Hybrid BM25 + GloVe | 0.33 | 0.47 (0.33-0.61) | 0.61 | 0.408 (0.28-0.53) | 0.327 | 1.1 |
+| GloVe average | 0.08 | 0.29 (0.18-0.41) | 0.33 | 0.163 (0.09-0.25) | 0.144 | 0.2 |
+| Random | 0.00 | 0.00 | 0.00 | 0.000 | 0.000 | 0.1 |
 
-Paired MRR@10 difference against BM25 (bootstrap 95% CI): LSA -0.18 (-0.29 to -0.08), TF-IDF -0.21
-(-0.31 to -0.12), GloVe average -0.51 (-0.63 to -0.39), hybrid BM25+LSA **-0.04 (-0.12 to +0.02, not
-significant)**. Full table: `results/test_paired_diff_vs_bm25.csv`.
+Paired MRR@10 difference against BM25 (bootstrap 95% CI): hybrid BM25+dense -0.01 (-0.10 to +0.07), hybrid BM25+LSA -0.03 (-0.11 to +0.03) and dense alone -0.08 (-0.21 to +0.04) are **not significant**. LSA -0.18, hybrid all four -0.19, TF-IDF -0.21, BM25+LSA+GloVe -0.22, BM25+GloVe -0.26 and GloVe -0.51 are all significantly worse (CIs exclude zero). Full table: `results/test_paired_diff_vs_bm25.csv`.
 
 ### What I take from it
 
 1. **BM25 is a very strong baseline on technical documentation.** The questions and the docs share
    identifiers and vocabulary (`warm_start`, `class_weight`, `RidgeCV`). The tokenizer also splits
    `class_weight` into `class` and `weight`, which lets natural-language questions hit code-style names.
-2. **Fusing in a weak retriever hurts.** Equal-weight rank fusion of BM25 and averaged GloVe dropped
+2. **A small dense model did not beat BM25 on its own, but fusing the two raised recall.** Dense MRR was
+   0.589 vs 0.671 (difference -0.08, CI -0.21 to +0.04), and dense Recall@5 was not significantly
+   different from BM25's (-0.04, CI -0.18 to +0.10). The BM25+dense hybrid reached Recall@5 of 0.88 vs
+   0.78: +0.10 (paired bootstrap 95% CI 0.02 to 0.18), about five more of the 51 questions. I examined
+   Recall@5 after seeing the results, so treat this as exploratory; on the pre-chosen MRR@10 the hybrid was
+   not significantly different from BM25. The cost is query time: roughly 200x slower per query on CPU.
+3. **Fusing in a weak retriever hurts.** Equal-weight rank fusion of BM25 and averaged GloVe dropped
    MRR from 0.67 to 0.41. Hybrid search is not automatically better than its best member.
-3. **Chunking mattered less than I expected, except for very large chunks** (dev, mean MRR over the four
+4. **Chunking mattered less than I expected, except for very large chunks** (dev, mean MRR over the four
    base retrievers): section-200 0.456, fixed-100 0.454, section-100 0.451, section-300 0.446,
    section-200 without heading prefix 0.435, fixed-200 0.416, fixed-300 0.378. The top four are within
    noise of each other. Prefixing each chunk with its heading path helped the embedding-style
    retrievers (LSA 0.445 to 0.488, GloVe 0.241 to 0.282) and was neutral for BM25.
-4. **Tuning bought little.** Over a 32-point BM25 grid, dev MRR ranged only 0.54 to 0.59; the selected
+5. **Tuning bought little.** Over a 32-point BM25 grid, dev MRR ranged only 0.54 to 0.59; the selected
    setting (stemming, b=0.6) is 0.589 against 0.548 for the defaults. A difference that size on 52
    questions is within noise.
-5. **50-question evaluations are noisy.** On dev, BM25 led TF-IDF by 0.04 MRR and LSA trailed TF-IDF;
+6. **50-question evaluations are noisy.** On dev, BM25 led TF-IDF by 0.04 MRR and LSA trailed TF-IDF;
    on test BM25 led by 0.21 and LSA beat TF-IDF. The ordering at the top held, the magnitudes did not.
    Read the confidence intervals, not the third decimal.
 
@@ -84,16 +87,10 @@ significant)**. Full table: `results/test_paired_diff_vs_bm25.csv`.
 BM25 put its first relevant chunk below rank 3 (or outside the top 10) on 14 of 51 test questions.
 Five questions were missed at k=5 by all four base retrievers. Typical causes:
 
-- **Vocabulary mismatch:** "which model mixes two kinds of penalty" (the docs say "L1 and L2-norm
-  regularization"); "discard columns that barely change" (the docs say "low variance").
-  This is where a dense model should help, and where GloVe averaging did not.
-- **Label noise (strict gold labels):** for "which data structures speed up neighbor lookups" the top hit
-  was the *Ball Tree* section, a defensible answer that the gold label (the *KDTree and BallTree
-  Classes* section) does not credit; similar for the hashing-trick section on a feature-hashing
-  question, and for parent or overview sections on a few others. I did not relabel after seeing test
-  failures, so the numbers above are a **lower bound** on usefulness.
-- **Wrong level of section:** the right content sometimes sits in an intro chunk that is judged
-  against a more specific gold subsection.
+- **Vocabulary mismatch:** "which model mixes two kinds of penalty" (the docs say "L1 and L2-norm regularization"); "discard columns that barely change" (the docs say "low variance").
+  Of the N questions where BM25 ranked the first relevant chunk below rank 3 or not at all, dense retrieval placed one in its top 3 for X, and the BM25+dense hybrid for Y.
+- **Label noise (strict gold labels):** for "which data structures speed up neighbor lookups" the top hit was the *Ball Tree* section, a defensible answer that the gold label (the *KDTree and BallTree Classes* section) does not credit; similar for the hashing-trick section on a feature-hashing question, and for parent or overview sections on a few others. I did not relabel after seeing test failures, so the numbers above are a **lower bound** on usefulness.
+- **Wrong level of section:** the right content sometimes sits in an intro chunk that is judged against a more specific gold subsection.
 
 Per-question results: `results/test_per_question.csv`.
 
@@ -111,17 +108,9 @@ passages for "Who won the 2018 World Cup?". Run the script with your own key to 
 
 ## What I did not run
 
-Being explicit, because these are the natural next questions:
-
-- **Dense transformer retrieval and cross-encoder reranking** are implemented
-  (`SentenceTransformerRetriever`, `CrossEncoderReranker`) and unit-tested with stub encoders, but the
-  environment this was built in could not download model weights, so **there are no results for them.**
-  Run `pip install sentence-transformers && python evaluate.py --dense BAAI/bge-small-en-v1.5` to add
-  dense and BM25+dense rows to the test table. I expect dense models to help on the vocabulary-mismatch
-  failures above; that is a hypothesis, not a result.
-- **LLM answer quality.** The Anthropic and OpenAI-compatible generators were tested against a local mock
-  server (request shape, headers, response parsing), not the live APIs. Whether answers are *correct*
-  needs a human or judge-model review of `results/generation_*.csv`.
+- **Cross-encoder reranking** is implemented (`CrossEncoderReranker`) and unit-tested with a stub scorer, but I did not evaluate it.
+- **LLM answer quality.** The Anthropic and OpenAI-compatible generators were tested against a local mock server (request shape, headers, response parsing), not the live APIs. Only the extractive baseline was run. Whether LLM answers are *correct* needs a human or judge-model review of `results/generation_*.csv`.
+- **Dense model tuning.** One dense model (bge-small-en-v1.5) was run with default settings and no tuning on dev. Other models might behave differently.
 - Single corpus (one library's docs), one question-writer, ~50 test questions.
 
 ## Run it
@@ -131,10 +120,13 @@ pip install -r requirements.txt
 python fetch_corpus.py              # scikit-learn 1.6.1 user guide + GloVe vectors (134 MB)
 python eval/validate_eval.py        # checks every gold label against the corpus
 python evaluate.py                  # full dev/test protocol, about 1 minute
+python evaluate.py --dense BAAI/bge-small-en-v1.5   # optional: adds dense rows (pip install sentence-transformers)
 python -m pytest -q                 # 23 tests
 python ask.py "How do I add more trees to an already trained forest?"
 streamlit run app.py
 ```
+
+Re-running on a different machine reproduced every row except Hybrid BM25+LSA, which differed in the second decimal (MRR 0.627 vs 0.636), probably from numerical differences in the SVD between library versions. The tables above are from the rerun.
 
 For written answers instead of quoted passages, set a key before `ask.py` or the app:
 
