@@ -24,17 +24,10 @@ intervals, and an honest look at what worked and what did not.
 
 ## How retrieval was evaluated
 
-- **103 questions**, each written about one section of the guide and phrased in natural language
-  (not copying the heading) so keyword matching gets no free ride. Each has a gold section and an
-  `evidence` regex; `eval/validate_eval.py` checks that the regex really appears inside the gold
-  section, which caught 7 labeling problems while building the set (3 evidence phrases that were not in the section, 4 ambiguous section names).
-- **Split:** 52 dev / 51 test, disjoint. Everything was chosen on dev; the test split was used only
-  to report (the protocol is in `evaluate.py`).
-- **Relevance** is judged on character offsets: a retrieved chunk is a hit if it overlaps the gold
-  section by at least 50% of the smaller of the two. This makes results comparable across chunking
-  strategies.
-- **Metrics:** Recall@k (any gold hit in the top k), MRR@10, nDCG@10, with 1,000-sample bootstrap
-  confidence intervals over questions and paired bootstrap differences between systems.
+- **103 questions**, each written about one section of the guide and phrased in natural language (not copying the heading) so keyword matching gets no free ride. Each has a gold section and an `evidence` regex; `eval/validate_eval.py` checks that the regex really appears inside the gold section, which caught 7 labeling problems while building the set (3 evidence phrases that were not in the section, 4 ambiguous section names).
+- **Split:** 52 dev / 51 test, disjoint. Everything was chosen on dev; the test split was used only to report (the protocol is in `evaluate.py`).
+- **Relevance** is judged on character offsets: a retrieved chunk is a hit if it overlaps the gold section by at least 50% of the smaller of the two. This makes results comparable across chunking strategies.
+- **Metrics:** Recall@k (any gold hit in the top k), MRR@10, nDCG@10, with 1,000-sample bootstrap confidence intervals over questions and paired bootstrap differences between systems.
 - Two full runs give identical metrics and the same selected configuration (everything is seeded; only latency varies).
 
 ## Results
@@ -59,28 +52,12 @@ Paired MRR@10 difference against BM25 (bootstrap 95% CI): hybrid BM25+dense -0.0
 
 ### What I take from it
 
-1. **BM25 is a very strong baseline on technical documentation.** The questions and the docs share
-   identifiers and vocabulary (`warm_start`, `class_weight`, `RidgeCV`). The tokenizer also splits
-   `class_weight` into `class` and `weight`, which lets natural-language questions hit code-style names.
-2. **A small dense model did not beat BM25 on its own, but fusing the two raised recall.** Dense MRR was
-   0.589 vs 0.671 (difference -0.08, CI -0.21 to +0.04), and dense Recall@5 was not significantly
-   different from BM25's (-0.04, CI -0.18 to +0.10). The BM25+dense hybrid reached Recall@5 of 0.88 vs
-   0.78: +0.10 (paired bootstrap 95% CI 0.02 to 0.18), about five more of the 51 questions. I examined
-   Recall@5 after seeing the results, so treat this as exploratory; on the pre-chosen MRR@10 the hybrid was
-   not significantly different from BM25. The cost is query time: roughly 200x slower per query on CPU.
-3. **Fusing in a weak retriever hurts.** Equal-weight rank fusion of BM25 and averaged GloVe dropped
-   MRR from 0.67 to 0.41. Hybrid search is not automatically better than its best member.
-4. **Chunking mattered less than I expected, except for very large chunks** (dev, mean MRR over the four
-   base retrievers): section-200 0.456, fixed-100 0.454, section-100 0.451, section-300 0.446,
-   section-200 without heading prefix 0.435, fixed-200 0.416, fixed-300 0.378. The top four are within
-   noise of each other. Prefixing each chunk with its heading path helped the embedding-style
-   retrievers (LSA 0.445 to 0.488, GloVe 0.241 to 0.282) and was neutral for BM25.
-5. **Tuning bought little.** Over a 32-point BM25 grid, dev MRR ranged only 0.54 to 0.59; the selected
-   setting (stemming, b=0.6) is 0.589 against 0.548 for the defaults. A difference that size on 52
-   questions is within noise.
-6. **50-question evaluations are noisy.** On dev, BM25 led TF-IDF by 0.04 MRR and LSA trailed TF-IDF;
-   on test BM25 led by 0.21 and LSA beat TF-IDF. The ordering at the top held, the magnitudes did not.
-   Read the confidence intervals, not the third decimal.
+1. **BM25 is a very strong baseline on technical documentation.** The questions and the docs share identifiers and vocabulary (`warm_start`, `class_weight`, `RidgeCV`). The tokenizer also splits `class_weight` into `class` and `weight`, which lets natural-language questions hit code-style names.
+2. **A small dense model did not beat BM25 on its own, but fusing the two raised recall.** Dense MRR was 0.589 vs 0.671 (difference -0.08, CI -0.21 to +0.04), and dense Recall@5 was not significantly different from BM25's (-0.04, CI -0.18 to +0.10). The BM25+dense hybrid reached Recall@5 of 0.88 vs 0.78: +0.10 (paired bootstrap 95% CI 0.02 to 0.18), about five more of the 51 questions. I examined  Recall@5 after seeing the results, so treat this as exploratory; on the pre-chosen MRR@10 the hybrid was not significantly different from BM25. The cost is query time: roughly 200x slower per query on CPU.
+3. **Fusing in a weak retriever hurts.** Equal-weight rank fusion of BM25 and averaged GloVe dropped MRR from 0.67 to 0.41. Hybrid search is not automatically better than its best member.
+4. **Chunking mattered less than I expected, except for very large chunks** (dev, mean MRR over the four base retrievers): section-200 0.456, fixed-100 0.454, section-100 0.451, section-300 0.446, section-200 without heading prefix 0.435, fixed-200 0.416, fixed-300 0.378. The top four are within noise of each other. Prefixing each chunk with its heading path helped the embedding-style retrievers (LSA 0.445 to 0.488, GloVe 0.241 to 0.282) and was neutral for BM25.
+5. **Tuning bought little.** Over a 32-point BM25 grid, dev MRR ranged only 0.54 to 0.59; the selected setting (stemming, b=0.6) is 0.589 against 0.548 for the defaults. A difference that size on 52 questions is within noise.
+6. **50-question evaluations are noisy.** On dev, BM25 led TF-IDF by 0.04 MRR and LSA trailed TF-IDF; on test BM25 led by 0.21 and LSA beat TF-IDF. The ordering at the top held, the magnitudes did not. Read the confidence intervals, not the third decimal.
 
 ### Error analysis
 
@@ -88,7 +65,7 @@ BM25 put its first relevant chunk below rank 3 (or outside the top 10) on 14 of 
 Five questions were missed at k=5 by all four base retrievers. Typical causes:
 
 - **Vocabulary mismatch:** "which model mixes two kinds of penalty" (the docs say "L1 and L2-norm regularization"); "discard columns that barely change" (the docs say "low variance").
-  Of the N questions where BM25 ranked the first relevant chunk below rank 3 or not at all, dense retrieval placed one in its top 3 for X, and the BM25+dense hybrid for Y.
+  Of the 14 questions where BM25 ranked the first relevant chunk below rank 3 or not at all, dense retrieval placed one in its top 3 for 4 (top 5 for 5), and the BM25+dense hybrid for 6 (top 5 for 8).
 - **Label noise (strict gold labels):** for "which data structures speed up neighbor lookups" the top hit was the *Ball Tree* section, a defensible answer that the gold label (the *KDTree and BallTree Classes* section) does not credit; similar for the hashing-trick section on a feature-hashing question, and for parent or overview sections on a few others. I did not relabel after seeing test failures, so the numbers above are a **lower bound** on usefulness.
 - **Wrong level of section:** the right content sometimes sits in an intro chunk that is judged against a more specific gold subsection.
 
@@ -157,9 +134,3 @@ fetch_corpus.py       downloads the corpus at a pinned release tag (not committe
 scikit-learn documentation: BSD-3-Clause (<https://github.com/scikit-learn/scikit-learn>), fetched at
 tag 1.6.1 and not redistributed here. GloVe 6B vectors (Pennington et al., 2014) are downloaded from the
 gensim-data release under the Public Domain Dedication and License.
-
-## Development notes
-
-Built with AI assistance (Claude). The eval questions and gold labels were drafted with that help and
-machine-validated against the corpus, but a human should review and rewrite some of them before treating
-the numbers as final. The dev/test protocol, code and results in this repo are all reproducible from the commands above.
