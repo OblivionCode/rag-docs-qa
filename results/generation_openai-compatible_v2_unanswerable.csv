@@ -1,0 +1,11 @@
+id,question,answer,abstained
+u01,What is the capital of France?,I don't know based on the provided documents.,True
+u02,How do I fine-tune a large language model with LoRA adapters?,I don't know based on the provided documents.,True
+u03,How do I deploy a Django application to a production server?,I don't know based on the provided documents.,True
+u04,What does PyTorch's autograd engine do during the backward pass?,I don't know based on the provided documents.,True
+u05,How do I train a convolutional network for semantic image segmentation in TensorFlow?,I don't know based on the provided documents.,True
+u06,What is the difference between an SQL inner join and a left join?,I don't know based on the provided documents.,True
+u07,How do I configure the DART booster in XGBoost?,I don't know based on the provided documents.,True
+u08,What is the best way to store a pandas DataFrame in Parquet with partitioning?,I don't know based on the provided documents.,True
+u09,How do I write a React component that fetches data with hooks?,I don't know based on the provided documents.,True
+u10,Who won the 2018 FIFA World Cup?,I don't know based on the provided documents.,True

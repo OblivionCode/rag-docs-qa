@@ -1,0 +1,303 @@
+id,question,answer,citation_ok,cited_gold,abstained
+q001,How can I trim a fully grown decision tree back using a penalty parameter so it overfits less?,"You can use pruning to trim a fully grown decision tree. However, pruning is not mentioned in the provided passages as a method to trim a fully grown decision tree using a penalty parameter. 
+
+However, you can use the `max_depth` parameter to control the size of the tree to prevent overfitting, as mentioned in passage [1]. 
+
+Alternatively, you can use the `max_leaf_nodes` parameter to control the tree size, as mentioned in passage [3]. 
+
+But, if you want to trim a fully grown decision tree using a penalty parameter, you can use the `alpha` parameter in the `DecisionTreeClassifier` or `DecisionTreeRegressor` class. The `alpha` parameter is a complexity parameter used to control overfitting, as mentioned in passage [5].",False,False,False
+q003,"What is the difference between CART and C4.5, and which one does the library's trees implement?","CART (Classification and Regression Trees) is very similar to C4.5, but it differs in that it supports numerical target variables (regression) and does not compute rule sets. CART constructs binary trees using the feature and threshold that yield the largest information gain at each node. [1]
+
+The scikit-learn implementation uses an optimized version of the CART algorithm; however, the scikit-learn implementation does not support categorical variables for now. [1]
+
+Therefore, the main difference between CART and C4.5 is that CART supports regression and does not compute rule sets, while C4.5 supports categorical targets and computes rule sets. The library's trees implement the CART algorithm. [1]",False,True,False
+q005,Which impurity measures can the tree use to decide where to split for classification?,"The tree can use the Gini, Log Loss, or Mean Squared Error impurity measures to decide where to split for classification. [1]",True,False,False
+q007,Is there an unsupervised way to turn samples into a sparse high-dimensional binary code using random trees?,Yes. [1],True,True,False
+q009,"How do stacked models combine several base learners, and what gets trained on their outputs?","Stacked models combine several base learners by training a higher-level model on their outputs. The higher-level model is trained to predict the output of the ensemble, which is a weighted combination of the outputs of the base learners. 
+
+[1]",False,False,False
+q011,How do I train copies of one model on random subsets of both the rows and the columns?,"Unfortunately, the provided passages do not contain information on how to train copies of one model on random subsets of both the rows and the columns. The passages describe various biclustering algorithms and their characteristics, but they do not provide a method for training multiple models on random subsets of the data.
+
+However, based on the description of the Spectral Co-Clustering algorithm in passage [4], it seems that this algorithm can be used to find biclusters with values higher than those in the corresponding other rows and columns. If you want to train multiple models on random subsets of the data, you might need to use a different approach, such as cross-validation or bootstrapping.
+
+I don't know based on the provided documents.",False,False,False
+q013,Which linear model tends to give sparse solutions by penalizing the sum of absolute coefficients?,"Linear models penalized with the L1 norm tend to give sparse solutions by penalizing the sum of absolute coefficients. [2]
+
+Specifically, the Lasso for regression, and LogisticRegression and LinearSVC for classification, are sparse estimators useful for this purpose. [2]
+
+The Lasso is a linear model that estimates sparse coefficients by minimizing the least-squares penalty with \alpha ||w||_1 added, where \alpha is a constant and ||w||_1 is the \ell_1-norm of the coefficient vector. [4]",True,True,False
+q015,Which regression approach copes with outliers by repeatedly fitting on random subsets of presumed good points?,"RANSAC [3] [4]. 
+
+In [3], RANSAC is described as an algorithm that fits a model from random subsets of inliers from the complete data set. 
+
+In [4], the steps of the RANSAC algorithm are described, including selecting random samples, fitting a model to the subset, classifying data as inliers or outliers, and saving the fitted model as the best model if it has the maximum number of inliers.",True,True,False
+q017,How can a linear model fit a curve by adding powers of the inputs as extra columns?,"You can fit a curve by adding powers of the inputs as extra columns using PolynomialFeatures from the sklearn.preprocessing module. 
+
+[3] This sort of preprocessing can be streamlined with the Pipeline tools. A single object representing a simple polynomial regression can be created and used as follows::
+
+    >>> from sklearn.preprocessing import PolynomialFeatures
+    >>> from sklearn.linear_model import LinearRegression
+    >>> from sklearn.pipeline import Pipeline
+    >>> import numpy as np
+    >>> model = Pipeline([('poly', PolynomialFeatures(degree=3)),
+    ...                   ('linear', LinearRegression(fit_intercept=False))])
+    >>> # fit to an order-3 polynomial data
+    >>> x = np.arange(5)
+    >>> y = 3 - 2 * x + x ** 2 - x ** 3
+    >>> model = model.fit(x[:, np.newaxis], y)
+    >>> model.named_steps['linear'].coef_
+    array([ 3., -2.,  1., -1.])
+
+The linear model trained on polynomial features is able to exactly recover the input polynomial coefficients.",False,True,False
+q019,Which estimator treats samples with large residuals differently using a threshold parameter?,HuberRegressor [1].,True,True,False
+q021,Which linear model learns its own regularization strength from the data through a probabilistic formulation?,Bayesian Regression learns its own regularization strength from the data through a probabilistic formulation [3].,True,False,False
+q023,How do I make a support vector machine pay more attention to a rare class?,"To make a support vector machine pay more attention to a rare class, you can use class weighting. However, the provided passages do not mention class weighting. 
+
+I don't know based on the provided documents.",False,False,False
+q025,Why does support vector training become impractical as the number of samples grows large?,"As the number of samples grows large, support vector training becomes impractical because the model produced by Support Vector Regression depends only on a subset of the training data, and the cost function ignores samples whose prediction is close to their target [1]. Additionally, the memory use of the vocabulary grows with the size of the dataset, and building the word-mapping requires a full pass over the dataset, making it impossible to fit text classifiers in a strictly online manner [2].",True,False,False
+q027,Is there a faster k-means variant for very large datasets that updates from small random subsets?,"Yes. [1] The MiniBatchKMeans variant of the KMeans algorithm uses mini-batches to reduce the computation time, while still attempting to optimise the same objective function. Mini-batches are subsets of the input data, randomly sampled in each training iteration. These mini-batches drastically reduce the amount of computation required to converge to a local solution.",False,True,False
+q029,Which centroid-based method slides candidate centers toward the densest nearby region?,Mean Shift [1].,True,True,False
+q031,How can I judge cluster quality without ground-truth labels using within-cluster versus nearest-other-cluster distances?,"You can judge cluster quality without ground-truth labels using the Silhouette Coefficient, which is defined as the mean of the Silhouette Coefficient for each sample. The Silhouette Coefficient for a single sample is given as the difference between **b** (the mean distance between a sample and all other points in the *next nearest cluster*) and **a** (the mean distance between a sample and all other points in the same class), divided by the maximum of **a** and **b** [1]. A higher Silhouette Coefficient score relates to a model with better defined clusters.",False,True,False
+q033,"Which unsupervised score is better when it is lower, reflecting clusters that are compact and far apart?",Davies-Bouldin Index [1]. A lower Davies-Bouldin index relates to a model with better separation between the clusters.,False,True,False
+q035,Which method orders points by reachability so clusters at different density thresholds can be extracted?,OPTICS orders points by reachability so clusters at different density thresholds can be extracted. [1],True,True,False
+q037,How should I split chronologically ordered data so that the model never trains on the future?,"You should use TimeSeriesSplit. [1]
+
+Alternatively, you can use a cross-validation iterator that has an inbuilt option to shuffle the data indices before splitting them, but be aware that shuffling may lead to overfitting if the data is not independently and identically distributed. [2]
+
+TimeSeriesSplit is specifically designed for chronologically ordered data and returns first k folds as train set and the (k+1) th fold as test set, ensuring that the model never trains on the future. [3]",True,True,False
+q039,How can I get one held-out prediction for every sample in the dataset?,"You can use `cross_val_score` with a held-out set to get one held-out prediction for every sample in the dataset. 
+
+Passage [2] shows an example of using `cross_val_score` with a held-out set: 
+
+  >>> from sklearn.model_selection import ShuffleSplit
+  >>> n_samples = X.shape[0]
+  >>> cv = ShuffleSplit(n_splits=5, test_size=0.3, random_state=0)
+  >>> cross_val_score(clf, X, y, cv=cv)
+  array([0.977..., 0.977..., 1.  ..., 0.955..., 1.        ])
+
+Passage [2] also shows another option of using an iterable yielding (train, test) splits as arrays of indices: 
+
+  >>> def custom_cv_2folds(X):
+  ...     n = X.shape[0]
+  ...     i = 1
+  ...     while i <= 2:
+  ...         idx = np.arange(n * (i - 1) / 2, n * i / 2, dtype=int)
+  ...         yield idx, idx
+  ...         i += 1
+  ...
+  >>> custom_cv = custom_cv_2folds(X)
+  >>> cross_val_score(clf, X, y, cv=custom_cv)
+  array([1.        , 0.973...])",False,False,False
+q041,Which scaler is less sensitive to extreme values because it uses the median and spread between quartiles?,I don't know based on the provided documents.,True,False,True
+q043,How do I encode a high-cardinality categorical feature with the mean of the target while limiting leakage?,"You can use the TargetEncoder with the `cv` parameter set to a value greater than 1 to prevent target information from leaking into the train-time representation. This is done using the `fit_transform` method, which internally relies on a cross fitting scheme. 
+
+For example: `TargetEncoder().fit_transform(X, y, cv=5)`
+
+This will split the training data into 5 folds and encode each fold using the encodings learnt using the other 4 folds. This helps prevent the downstream model from overfitting spurious correlations. 
+
+Note that the `fit` method does not use any cross fitting schemes and learns one encoding on the entire training set, which is used to encode categories in `transform`. 
+
+[3]",False,True,False
+q045,How can I build smooth piecewise-polynomial basis columns from a single numeric feature?,"You can build smooth piecewise-polynomial basis columns from a single numeric feature using the SplineTransformer. [1]
+
+The SplineTransformer generates spline basis functions for each feature with the polynomial degree and the positions of the knots. [1]
+
+You can use it as follows:
+
+    >>> from sklearn.preprocessing import SplineTransformer
+    >>> transformer = SplineTransformer(degree=3, n_knots=5)
+    >>> X = np.array([1, 2, 3, 4, 5])
+    >>> transformer.fit_transform(X)
+
+This will generate smooth piecewise-polynomial basis columns from the single numeric feature. [1]",True,True,False
+q047,How do I rescale each individual sample so that its vector has length one?,I don't know based on the provided documents.,True,False,True
+q049,How can I speed up PCA when I only need a handful of components from a large matrix?,"You can use the `svd_solver='randomized'` parameter in the PCA object to speed up the computation when you only need a handful of components from a large matrix. This method has a time complexity of O(n_{\max}^2 \cdot n_{\mathrm{components}}) instead of O(n_{\max}^2 \cdot n_{\min}) for the exact method [2]. 
+
+Alternatively, you can use the `eigen_solver='randomized'` parameter in the KernelPCA object to speed up the computation when the number of requested `n_components` is small compared with the number of samples [5]. This method has a time complexity of O(n_{\mathrm{samples}}^2 \cdot n_{\mathrm{components}}) instead of O(n_{\mathrm{samples}}^3) for the exact method [5].",False,True,False
+q051,Which generative model discovers topics in collections of word counts?,"Latent Dirichlet Allocation (LDA) is a generative probabilistic model that discovers topics in collections of word counts. [1]
+
+In LDA, the model assumes the following generative process for a corpus with D documents and K topics: [3]
+
+    1. For each topic k \in K, draw \beta_k \sim \mathrm{Dirichlet}(\eta). This provides a distribution over the words, i.e. the probability of a word appearing in topic k.
+    2. For each document d \in D, draw the topic proportions \theta_d \sim \mathrm{Dirichlet}(\alpha).
+    3. For each word i in document d, draw the topic assignment z_{di} \sim \mathrm{Multinomial}(\theta_d) and the observed word w_{ij} \sim \mathrm{Multinomial}(\beta_{z_{di}})
+
+LDA is a topic model that is used for discovering abstract topics from a collection of documents. [1]",False,True,False
+q053,Which reduction works directly on sparse matrices without centering and is used for latent semantic analysis?,"Truncated SVD works directly on sparse matrices without centering and is used for latent semantic analysis. [1]
+
+It is recommended to use Truncated SVD on tf-idf matrices, which are sparse, to bring the feature values closer to a Gaussian distribution. [1]
+
+Truncated SVD is equivalent to PCA when the columnwise means of the feature values are subtracted from the feature values. [1]
+
+Truncated SVD is applied to term-document matrices, which are sparse, to combat the effects of synonymy and polysemy. [1]
+
+LSA (Latent Semantic Analysis) is equivalent to truncated SVD applied to term-document matrices. [1]
+
+LSA is also known as latent semantic indexing (LSI), though strictly that refers to its use in persistent indexes for information retrieval purposes. [1]",True,True,False
+q055,How do I ignore very common words like 'the' when counting terms?,"You can use the `TfidfTransformer` to ignore very common words like 'the' when counting terms. The `TfidfTransformer` uses the term frequency-inverse document frequency (tf-idf) transform, which down-weights very common terms like 'the' and up-weights rare terms. 
+
+The tf-idf transform is defined as: `tf-idf(t,d) = tf(t,d) * idf(t)`, where `tf(t,d)` is the term frequency and `idf(t)` is the inverse document frequency. The inverse document frequency is computed as: `idf(t) = log((1 + n) / (1 + df(t))) + 1`, where `n` is the total number of documents and `df(t)` is the number of documents containing term `t`.
+
+Using the `TfidfTransformer`'s default settings, the term frequency is multiplied with the idf component, which down-weights very common terms like 'the'. 
+
+[3]",False,False,False
+q057,How can I cut an image into many small windows?,"You can use the `extract_patches_2d` function from the `image` module in scikit-learn to cut an image into many small windows. 
+
+[4] shows how to use `extract_patches_2d` to extract patches from an image. For example, you can use the following code to extract 2x2 patches from an image:
+
+```python
+patches = image.extract_patches_2d(one_image, (2, 2))
+```
+
+This will return a 3D array where each 2x2 patch is a separate 2D array.
+
+If you want to extract patches of a different size, you can specify the `patch_size` parameter. For example, to extract 3x3 patches, you can use:
+
+```python
+patches = image.extract_patches_2d(one_image, (3, 3))
+```
+
+[4] also shows how to reconstruct the original image from the patches by averaging on overlapping areas.
+
+[5] shows how to use the `PatchExtractor` class, which is a scikit-learn transformer that can be used in pipelines to extract patches from multiple images.",False,True,False
+q059,Which tools keep only the top-scoring features according to a statistical test like chi-squared?,"The tools that keep only the top-scoring features according to a statistical test like chi-squared are SelectPercentile and SelectKBest [1].
+
+These tools support unsupervised feature selection as well. One needs to provide a `score_func` where `y=None`. The `score_func` should use internally `X` to compute the scores [1].
+
+Note that the chi2-test should only be applied to non-negative features, such as frequencies [1].",False,True,False
+q061,How can I greedily add or remove features one at a time judged by cross-validated score?,"You can use the SequentialFeatureSelector transformer to greedily add or remove features one at a time judged by cross-validated score. 
+
+For forward SFS, you can use the `SequentialFeatureSelector` with the `direction` parameter set to `'forward'`. The procedure stops when the desired number of selected features is reached, as determined by the `n_features_to_select` parameter. [1]
+
+For backward SFS, you can use the `SequentialFeatureSelector` with the `direction` parameter set to `'backward'`. The procedure starts with all the features and greedily removes features from the set. [1]
+
+Answer: 
+
+You can use the `SequentialFeatureSelector` with the `direction` parameter set to either `'forward'` or `'backward'`. [1]",False,True,False
+q063,How do I measure agreement between two annotators while correcting for chance?,"You can use the Adjusted Mutual Information (AMI) score to measure the agreement between two annotators while correcting for chance. The AMI score is normalized against chance and has an upper bound of 1, where values close to 1 indicate significant agreement between the two label assignments. 
+
+[4]",False,False,False
+q065,Which loss function is appropriate for evaluating quantile predictions?,"The appropriate loss function for evaluating quantile predictions is the pinball loss, which is equivalent to half of the mean absolute error when the quantile parameter `alpha` is set to 0.5. [3]
+
+Alternatively, the mean_pinball_loss function can be used to evaluate the predictive performance of quantile regression models. [3]
+
+A scorer object with a specific choice of `alpha` can be built using the `make_scorer` function, which can be used to evaluate the generalization performance of a quantile regressor via cross-validation. [3]
+
+Note that the `QuantileRegressor` class in scikit-learn also supports the pinball loss as a loss function, which can be used to estimate conditional quantiles. [5]",True,True,False
+q067,How can I create a trivial baseline model to sanity check my real model against?,"You can create a trivial baseline model using the `DummyClassifier` class from scikit-learn. Specifically, you can use the `most_frequent` strategy, which always predicts the most frequent label in the training set. 
+
+[1] 
+
+Alternatively, you can use the `constant` strategy, which always predicts a constant label that is provided by the user. 
+
+[1]",False,True,False
+q069,Which metrics express how much a positive test result raises the odds of the condition?,"The positive likelihood ratio LR_+ is the probability of a classifier to correctly predict that a sample belongs to the positive class divided by the probability of predicting the positive class for a sample belonging to the negative class: LR_+ = \frac{\text{PR}(P+|T+)}{\text{PR}(P+|T-)} [3].
+
+For classifiers above chance LR_+ above 1 **higher is better** [2].
+
+The post-test odds can be calculated as: \text{post-test odds} = \text{Likelihood ratio} \times \text{pre-test odds} [3].
+
+The post-test probability can be calculated as: \text{post-test probability} = \frac{\text{post-test odds}}{1 + \text{post-test odds}} [1].
+
+Therefore, the positive likelihood ratio LR_+ expresses how much a positive test result raises the odds of the condition [3].",True,True,False
+q071,How do I visually compare predicted probabilities with the observed fraction of positives?,"You can visually compare predicted probabilities with the observed fraction of positives using a calibration curve, which is created with the `from_estimator` function, which uses `calibration_curve` to calculate the per bin average predicted probabilities and fraction of positives. [1]
+
+The calibration curve plots the frequency of the positive label (an estimation of the conditional event probability P(Y=1|\text{predict_proba})) on the y-axis against the predicted probability `predict_proba` of a model on the x-axis. [1]
+
+The y-axis is the fraction of positives given the predictions of that bin, i.e. the proportion of samples whose class is the positive class (in each bin). [1]",True,True,False
+q073,Which covariance function has a parameter controlling how smooth the resulting functions are?,"The Matérn kernel has a parameter controlling how smooth the resulting functions are, specifically the parameter ν, which controls the smoothness of the learned function. [4]
+
+The Matérn kernel is given by:
+
+k(x_i, x_j) = \Bigg(1 + \frac{\sqrt{5}}{l} d(x_i , x_j ) +\frac{5}{3l} d(x_i , x_j )^2 \Bigg) \exp \Bigg(-\frac{\sqrt{5}}{l} d(x_i , x_j ) \Bigg) \quad \quad \nu= \tfrac{5}{2}
+
+are popular choices for learning functions that are not infinitely
+differentiable (as assumed by the RBF kernel) but at least once (\nu =
+3/2) or twice differentiable (\nu = 5/2).
+
+The flexibility of controlling the smoothness of the learned function via \nu
+allows adapting to the properties of the true underlying functional relation.
+
+[4]",True,True,False
+q075,How can a missing entry be filled in using the values of the most similar rows?,I don't know based on the provided documents.,True,False,True
+q077,Which nonlinear reduction preserves distances measured along a neighbor graph rather than straight lines?,"Locally Linear Embedding (LLE) preserves distances measured along a neighbor graph rather than straight lines. [1]
+
+LLE seeks a lower-dimensional projection of the data which preserves distances within local neighborhoods. It can be thought of as a series of local Principal Component Analyses which are globally compared to find the best non-linear embedding. [1]
+
+This is in contrast to methods like LDA, which preserves distances in a linearly transformed space. [5]
+
+Other methods like Spectral Clustering and DBSCAN also use neighbor graphs, but they are not nonlinear reductions in the same sense as LLE. Spectral Clustering uses a nearest-neighbor graph, but it is a linear transformation of the graph. [4] DBSCAN uses a distance graph, but it is a density-based clustering algorithm, not a nonlinear reduction. [3]",True,False,False
+q079,Which method learns a distance metric to improve nearest-neighbor accuracy?,Neighborhood Components Analysis (NCA) learns a distance metric to improve nearest-neighbor accuracy. [1],True,True,False
+q081,Which naive Bayes variant is designed to work well on skewed text classification problems?,Multinomial Naive Bayes is designed to work well on skewed text classification problems [2].,True,False,False
+q083,"Which anomaly detector isolates points by random splits, flagging those with unusually short paths?","Isolation Forest isolates points by random splits, flagging those with unusually short paths [1].",True,True,False
+q085,Is there a formula for choosing the shrinkage amount of a covariance estimate automatically?,"Yes. 
+
+[3] This automatically determines the optimal shrinkage parameter in an analytic way following the lemma introduced by Ledoit and Wolf [2]_.",True,False,False
+q087,Why can shuffling one column understate its importance when another column carries the same information?,"When shuffling one column, if another column carries the same information, the model's performance on the corrupted data may not decrease significantly, leading to an underestimation of the importance of the shuffled column. This is because the model can still rely on the other column to make predictions. [1]",False,False,False
+q089,"Instead of trying every combination, how can I sample a fixed number of settings from distributions?","You can use the `RandomizedSearchCV` class from `sklearn.model_selection` to sample a fixed number of settings from distributions. 
+
+This is achieved by passing a `distribution` to the `param_distributions` parameter, which is a dictionary mapping parameter names to distributions. 
+
+For example, to sample a fixed number of settings for the `C` parameter, you can use a `loguniform` distribution:
+
+```python
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.utils.fixes import loguniform
+
+param_distributions = {'C': loguniform(1e0, 1e3)}
+```
+
+This will sample a fixed number of settings for the `C` parameter from a log-uniform distribution between `1e0` and `1e3`.
+
+[1]",False,True,False
+q091,How can a bootstrap-based ensemble estimate generalization error without a separate validation set?,The generalization error can be estimated without a separate validation set by using the out-of-bag (OOB) samples. This is done by setting `oob_score=True` in the ensemble method. [1],False,True,False
+q093,How do I apply a function like a log to the target during fitting and automatically invert it for predictions?,"You can apply a function like a log to the target during fitting and automatically invert it for predictions by using the `TransformedTargetRegressor` class. This class takes a regressor and a transformer as arguments, and applies the transformer to the target variable before fitting the regressor. The predictions are then mapped back to the original space via the inverse transform.
+
+Here's an example from the passage [2]:
+
+```
+>>> def func(x):
+...     return np.log(x)
+>>> def inverse_func(x):
+...     return np.exp(x)
+
+>>> regr = TransformedTargetRegressor(regressor=LinearRegression(),
+...                                   transformer=func,
+...                                   inverse_transform=inverse_func)
+```
+
+This will apply the `func` function to the target variable during fitting, and use the `inverse_func` function to map the predictions back to the original space.",False,True,False
+q095,How can I model dependencies among multiple labels by feeding earlier predictions to later classifiers?,"You can model dependencies among multiple labels by using a ClassifierChain. 
+
+For a multi-label classification problem with N classes, N binary classifiers are assigned an integer between 0 and N-1. These integers define the order of models in the chain. Each classifier is then fit on the available training data plus the true labels of the classes whose models were assigned a lower number. [3]
+
+When predicting, the true labels will not be available. Instead the predictions of each model are passed on to the subsequent models in the chain to be used as features. [3]
+
+Clearly the order of the chain is important. The first model in the chain has no information about the other labels while the last model in the chain has features indicating the presence of all of the other labels. In general one does not know the optimal ordering of the models in the chain so typically many randomly ordered chains are fit and their predictions are averaged together. [3]",False,True,False
+q097,Which nonparametric method estimates a smooth probability density using a bandwidth?,Kernel Density Estimation [1] estimates a smooth probability density using a bandwidth [1].,True,True,False
+q099,How can a classifier use its own confident predictions on unlabeled data to improve itself?,"A classifier can use its own confident predictions on unlabeled data to improve itself by implementing the SelfTrainingClassifier, which is based on Yarowsky's algorithm [1]. This algorithm allows the classifier to learn from unlabeled data by predicting labels for the unlabeled samples and adding a subset of these labels to the labeled dataset [1]. The classifier can then use these new labels to retrain itself, improving its performance on the labeled data. 
+
+This process can be repeated multiple times, with the classifier using its own confident predictions to select the subset of labels to add to the labeled dataset [1]. The SelfTrainingClassifier can be called with any classifier that implements `predict_proba`, passed as the parameter `base_classifier` [1].",False,True,False
+q101,How can a kernel feature map be approximated using a subset of the training data?,"The kernel feature map can be approximated using a subset of the training data by using the `fit_transform` method of the `RBFSampler` class, which performs a Monte Carlo approximation to the kernel values. This method relies on a subset of the training data to approximate the kernel values, and the results may vary between different calls to the `fit` function. 
+
+[2]",False,False,False
+q103,How can I change the cut-off that turns predicted probabilities into class labels after training?,"You can change the cut-off that turns predicted probabilities into class labels after training by using the `threshold` parameter in the `predict` method of a classifier, or by using the `predict_proba` method and then applying a threshold to the predicted probabilities.
+
+For example, in binary classification, you can use the `predict_proba` method to get the predicted probabilities, and then apply a threshold of 0.5 to get the class labels:
+
+```python
+probs = clf.predict_proba(X)
+labels = (probs[:, 1] > 0.5).astype(int)
+```
+
+Alternatively, you can use the `predict` method with the `threshold` parameter set to a specific value:
+
+```python
+labels = clf.predict(X, threshold=0.5)
+```
+
+Note that the `threshold` parameter is not available for all classifiers, and its behavior may vary depending on the specific classifier.
+
+[1] does not mention the `threshold` parameter, but [1] does mention that ""a positive class is predicted when the conditional probability P(y|X) is greater than 0.5 (obtained with predict_proba) or if the decision score is greater than 0 (obtained with decision_function)"".
+
+I don't know based on the provided documents how to change the cut-off for multiclass classification.",False,False,False

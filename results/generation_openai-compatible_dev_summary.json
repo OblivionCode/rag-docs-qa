@@ -1,0 +1,11 @@
+{
+  "mode": "openai-compatible",
+  "split": "dev",
+  "prompt": "v1",
+  "n_answerable": 52,
+  "citation_ok": 0.4807692307692308,
+  "cited_gold": 0.6346153846153846,
+  "abstained_on_answerable": 0.057692307692307696,
+  "n_unanswerable": 10,
+  "abstain_rate_on_unanswerable": 1.0
+}

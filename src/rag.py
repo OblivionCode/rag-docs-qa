@@ -31,6 +31,19 @@ SYSTEM_PROMPT = (
     "4. Be concise. Keep class, function and parameter names exactly as written."
 )
 
+SYSTEM_PROMPT_V2 = (
+    "You answer questions about the scikit-learn user guide using ONLY the numbered passages provided.\n"
+    "Rules:\n"
+    "1. EVERY sentence of your answer must end with a citation like [1] or [2][3]. Never write a sentence without one.\n"
+    "2. Answer only if a passage directly states the answer. Do not use outside knowledge, and do not infer an answer from what the passages leave unsaid.\n"
+    f"3. If the passages do not directly contain the answer (even if they are on a related topic), reply exactly: {ABSTAIN}\n"
+    "4. Be concise: one to three sentences. Keep class, function and parameter names exactly as written."
+)
+
+
+def get_system_prompt() -> str:
+    return SYSTEM_PROMPT_V2 if os.environ.get("RAG_PROMPT", "v1") == "v2" else SYSTEM_PROMPT
+
 
 @dataclass
 class Passage:
@@ -112,7 +125,7 @@ class AnthropicGenerator:
         self.base_url, self.max_tokens = base_url.rstrip("/"), max_tokens
 
     def generate(self, question: str, passages: list[Passage]) -> str:
-        body = {"model": self.model, "max_tokens": self.max_tokens, "temperature": 0, "system": SYSTEM_PROMPT,
+        body = {"model": self.model, "max_tokens": self.max_tokens, "temperature": 0, "system": get_system_prompt(),
                 "messages": [{"role": "user", "content": build_prompt(question, passages)}]}
         out = _post_json(f"{self.base_url}/v1/messages",
                          {"x-api-key": self.api_key, "anthropic-version": "2023-06-01"}, body)
@@ -131,7 +144,7 @@ class OpenAICompatibleGenerator:
 
     def generate(self, question: str, passages: list[Passage]) -> str:
         body = {"model": self.model, "max_tokens": self.max_tokens, "temperature": 0,
-                "messages": [{"role": "system", "content": SYSTEM_PROMPT},
+                "messages": [{"role": "system", "content": get_system_prompt()},
                              {"role": "user", "content": build_prompt(question, passages)}]}
         out = _post_json(f"{self.base_url}/chat/completions", {"authorization": f"Bearer {self.api_key}"}, body)
         msg = out["choices"][0]["message"]
