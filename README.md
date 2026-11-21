@@ -8,8 +8,7 @@ intervals, and an honest look at what worked and what did not.
 ![Retrieval comparison on the test split](results/test_retrieval_comparison.png)
 
 **Headline:** tuned BM25 over section-aware chunks had the best MRR@10 (0.67, 95% CI 0.55 to 0.78) and Recall@5 of 0.78 on 51 held-out questions. A hybrid of BM25 and a small dense embedding model (bge-small-en-v1.5) had the highest Recall@5 (0.88; +0.10 over BM25 in an exploratory paired test, CI 0.02 to 0.18) and nDCG@10 (0.58), but its MRR was not significantly different from BM25's, and it was roughly
-200 times slower per query on CPU (314 ms vs 1.3 ms). Dense retrieval alone (MRR 0.59) was also not significantly different from BM25. TF-IDF, LSA, averaged GloVe vectors and three of the other hybrids were significantly worse. LLM answer generation is implemented but not evaluated (see [What I did not run](#what-i-did-not-run)).
-
+200 times slower per query on CPU (314 ms vs 1.3 ms). Dense retrieval alone (MRR 0.59) was also not significantly different from BM25. TF-IDF, LSA, averaged GloVe vectors and three of the other hybrids were significantly worse.LLM generation was run only with a local `llama3.1` (see [Generation](#generation-structural-checks-and-a-small-manual-review)): it refuses off-topic questions reliably, but answer quality is bounded by retrieval.
 ## What is in the pipeline
 
 | Stage | Implementation |
@@ -71,7 +70,7 @@ Five questions were missed at k=5 by all four base retrievers. Typical causes:
 
 Per-question results: `results/test_per_question.csv`.
 
-### Generation (structural checks only)
+### Generation (structural checks and a small manual review)
 
 `evaluate_generation.py` checks citation structure and abstention without needing a judge model. Run on the 51 test questions plus 10 off-topic ones, with `llama3.1` served locally through Ollama (OpenAI-compatible mode, temperature 0):
 
@@ -81,14 +80,13 @@ Per-question results: `results/test_per_question.csv`.
 | LLM (`llama3.1`, Ollama), prompt v1 | 73% (37/51) | 100% (10/10) | 61% (31/51) | 4% (2/51) |
 | LLM (`llama3.1`, Ollama), prompt v2 (stricter) | 69% (35/51) | 100% (10/10) | 76% (39/51) | 10% (5/51) |
 
-- **Prompt v2.** Prompt v1 failed the citation check mainly because answers left some sentences uncited. Prompt v2 requires every sentence to end with a citation and to answer only when a passage directly states the answer. I compared the two on the dev questions first (citation check 48% to 73%; wrong abstentions 3 to 6 of 52), then ran v2 once on test: citation check 61% to 76%, gold-section citations 73% to 69% (within noise), wrong abstentions 2 to 5 of 51. So the stricter prompt buys cleaner citations at the price of refusing a few more answerable questions. Caveats: v2 was written after I had seen v1's test failures, so the dev numbers are the cleaner evidence; the 10 off-topic questions were reused for dev and test; and the manual correctness review above covers v1 answers only, so I do not know whether v2's answers are more or less correct.
-
-- **Manual correctness review.** I rated a random sample of 20 of the 51 answers (seed 42) by reading each against the scikit-learn docs: 15 correct, 1 partly correct, 3 wrong, 1 fair abstention (`results/generation_review.csv`). That is 75% fully correct (about 53%-89% as a 95% interval at n = 20), or 15 of 19 if the fair abstention is excluded. This was a single reviewer, not blinded, so treat it as indicative rather than a measured accuracy.
-- **Failure analysis.** All four answers rated wrong or partly correct had `cited_gold = False`: retrieval never surfaced the gold section. The partly correct one (q060) was an abstention on a question the docs do answer ("barely change" vs the docs' "low variance"). The three wrong answers were confident answers built on off-target passages: a faithful summary of the wrong section (q002, NaN handling), a plausible wrong guess (q050, "LDA" where the KL-divergence factorization is NMF), and an inference from silence (q026, claiming SVMs need no rescaling because the passages never mention it). So the main generation weakness is not abstaining when the passages are topically close but do not contain the answer; the grounding prompt handles clearly unrelated questions but not near-misses. Improving retrieval (the dense and reranker code paths, not yet run) should help here more than prompt changes.- **Abstention is the clear result.** The LLM refused all 10 off-topic questions, where the extractive baseline answered every one. With only 10 questions, "100%" means "at least roughly 70%", not exactly 100%.
-- **Citing a gold section did not improve** (71% to 73%, within noise at n = 51). It is also capped by retrieval: BM25 Recall@5 is 0.78, and the model cannot cite a section it was never shown.
-- **All 20 citation-check failures were uncited sentences**, not invented source numbers. The model often found the right passage but did not tag every sentence with `[n]`. A stricter prompt could fix this; I did not tune it, because that would mean tuning on the test split.
-- **The two wrong abstentions** (q060, q076) are vocabulary-mismatch retrieval misses of the kind described above, so the abstention rule behaved correctly given what it was shown.
-- **This measures citation structure and abstention, not correctness.** For example, q002 (NaN handling in decision trees) got a faithful but wrong answer because retrieval returned the imputation section. Single run, one small local model, so treat these numbers as indicative.
+- **Abstention is the clear result.** The LLM refused all 10 off-topic questions, where the extractive baseline answered every one. With only 10 questions, "100%" means "at least roughly 70%".
+- **Citing a gold section did not improve** (71% to 73% for v1, within noise at n = 51). It is capped by retrieval: BM25 Recall@5 is 0.78, and the model cannot cite a section it was never shown.
+- **Citation failures (v1).** All 20 failures of the citation check were uncited sentences, not invented source numbers.
+- **Prompt v2** requires every sentence to end with a citation and to answer only when a passage directly states the answer. On dev: citation check 48% to 73%, wrong abstentions 3 to 6 of 52. Run once on test: citation check 61% to 76%, gold-section citations 73% to 69% (within noise), wrong abstentions 2 to 5 of 51. So v2 buys cleaner citations at the price of refusing a few more answerable questions. v2 was written after I had seen v1's test failures, so the dev numbers are the cleaner evidence, and the 10 off-topic questions were reused for dev and test.
+- **Manual correctness review.** I rated a random sample of 20 of the 51 answers (seed 42) against the scikit-learn docs: 15 correct, 1 partly correct, 3 wrong, 1 fair abstention (`results/generation_review.csv`), i.e. 75% fully correct (about 53%-89% as a 95% interval at n = 20). I repeated the review on the same 20 questions with v2's answers and got the same counts (`results/generation_review_v2.csv`). Both reviews were by one person, and I knew the v1 ratings when rating v2, so this is indicative, not a blind comparison, and cannot detect small differences.
+- **Failure analysis (v1 sample).** All four answers rated wrong or partly correct had `cited_gold = False`: retrieval never surfaced the gold section. The partly correct one (q060) was an abstention on a question the docs do answer ("barely change" vs the docs' "low variance"). The three wrong answers were confident answers built on off-target passages: a faithful summary of the wrong section (q002, NaN handling), a plausible wrong guess (q050, "LDA" where the KL-divergence factorization is NMF), and an inference from silence (q026, claiming SVMs need no rescaling because the passages never mention it). So the main generation weakness is not abstaining when passages are topically close but do not contain the answer. The two wrong abstentions on the test split (q060, q076) are likely the same kind of retrieval miss. Better retrieval (the dense hybrid above, or the not-yet-run reranker) should help more than prompt changes.
+- **Caveats.** Single run, one small local model. I did not check prompt lengths against Ollama's default context window (4096 tokens in my setup), so long prompts may have been truncated.
 
 ## What I did not run
 
@@ -125,6 +123,7 @@ To evaluate generation (needs one of the LLM setups above):
 RAG_PROMPT=v1 python evaluate_generation.py --split dev   # tune on dev
 RAG_PROMPT=v2 python evaluate_generation.py --split dev   # stricter prompt, dev
 RAG_PROMPT=v2 python evaluate_generation.py               # stricter prompt, test split (run once)
+python evaluate_generation.py                             # prompt v1, test split (the v1 row)
 ```
 
 ## Repository layout
