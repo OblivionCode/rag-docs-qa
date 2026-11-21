@@ -52,7 +52,7 @@ Paired MRR@10 difference against BM25 (bootstrap 95% CI): hybrid BM25+dense -0.0
 ### What I take from it
 
 1. **BM25 is a very strong baseline on technical documentation.** The questions and the docs share identifiers and vocabulary (`warm_start`, `class_weight`, `RidgeCV`). The tokenizer also splits `class_weight` into `class` and `weight`, which lets natural-language questions hit code-style names.
-2. **A small dense model did not beat BM25 on its own, but fusing the two raised recall.** Dense MRR was 0.589 vs 0.671 (difference -0.08, CI -0.21 to +0.04), and dense Recall@5 was not significantly different from BM25's (-0.04, CI -0.18 to +0.10). The BM25+dense hybrid reached Recall@5 of 0.88 vs 0.78: +0.10 (paired bootstrap 95% CI 0.02 to 0.18), about five more of the 51 questions. I examined Recall@5 after seeing the results, so treat this as exploratory; on the pre-chosen MRR@10 the hybrid was not significantly different from BM25. The cost is query time: roughly 200x slower per query on CPU.
+2. **A small dense model did not beat BM25 on its own, but fusing the two raised recall.** Dense MRR was 0.589 vs 0.671 (difference -0.08, CI -0.21 to +0.04), and dense Recall@5 was not significantly different from BM25's (-0.04, CI -0.18 to +0.10). The BM25+dense hybrid reached Recall@5 of 0.88 vs 0.78: +0.10 (paired bootstrap 95% CI 0.02 to 0.18), about five more of the 51 questions. I examined Recall@5 after seeing the results, so treat this as exploratory; on the pre-chosen MRR@10 the hybrid was not significantly different from BM25. The cost is query time: roughly 240x slower per query on CPU.
 3. **Fusing in a weak retriever hurts.** Equal-weight rank fusion of BM25 and averaged GloVe dropped MRR from 0.67 to 0.41. Hybrid search is not automatically better than its best member.
 4. **Chunking mattered less than I expected, except for very large chunks** (dev, mean MRR over the four base retrievers): section-200 0.456, fixed-100 0.454, section-100 0.451, section-300 0.446, section-200 without heading prefix 0.435, fixed-200 0.416, fixed-300 0.378. The top four are within noise of each other. Prefixing each chunk with its heading path helped the embedding-style retrievers (LSA 0.445 to 0.488, GloVe 0.241 to 0.282) and was neutral for BM25.
 5. **Tuning bought little.** Over a 32-point BM25 grid, dev MRR ranged only 0.54 to 0.59; the selected setting (stemming, b=0.6) is 0.589 against 0.548 for the defaults. A difference that size on 52 questions is within noise.
@@ -86,7 +86,7 @@ Per-question results: `results/test_per_question.csv`.
 - **Prompt v2** requires every sentence to end with a citation and to answer only when a passage directly states the answer. On dev: citation check 48% to 73%, wrong abstentions 3 to 6 of 52. Run once on test: citation check 61% to 76%, gold-section citations 73% to 69% (within noise), wrong abstentions 2 to 5 of 51. So v2 buys cleaner citations at the price of refusing a few more answerable questions. v2 was written after I had seen v1's test failures, so the dev numbers are the cleaner evidence, and the 10 off-topic questions were reused for dev and test.
 - **Manual correctness review.** I rated a random sample of 20 of the 51 answers (seed 42) against the scikit-learn docs: 15 correct, 1 partly correct, 3 wrong, 1 fair abstention (`results/generation_review.csv`), i.e. 75% fully correct (about 53%-89% as a 95% interval at n = 20). I repeated the review on the same 20 questions with v2's answers and got the same counts (`results/generation_review_v2.csv`). Both reviews were by one person, and I knew the v1 ratings when rating v2, so this is indicative, not a blind comparison, and cannot detect small differences.
 - **Failure analysis (v1 sample).** All four answers rated wrong or partly correct had `cited_gold = False`: retrieval never surfaced the gold section. The partly correct one (q060) was an abstention on a question the docs do answer ("barely change" vs the docs' "low variance"). The three wrong answers were confident answers built on off-target passages: a faithful summary of the wrong section (q002, NaN handling), a plausible wrong guess (q050, "LDA" where the KL-divergence factorization is NMF), and an inference from silence (q026, claiming SVMs need no rescaling because the passages never mention it). So the main generation weakness is not abstaining when passages are topically close but do not contain the answer. The two wrong abstentions on the test split (q060, q076) are likely the same kind of retrieval miss. Better retrieval (the dense hybrid above, or the not-yet-run reranker) should help more than prompt changes.
-- **Caveats.** Single run, one small local model. I did not check prompt lengths against Ollama's default context window (4096 tokens in my setup), so long prompts may have been truncated.
+- **Caveats.** Single run, one small local model. All 103 prompts fit within Ollama's default 4096-token context (longest: 1,159 words, about 2,200 tokens by estimate), so truncation did not affect the results.
 
 ## What I did not run
 
@@ -135,7 +135,9 @@ src/retrievers.py     BM25, TF-IDF, LSA, GloVe, RRF, optional dense + cross-enco
 src/rag.py            prompt, generators, citation verifier, pipeline
 src/evaluation.py     relevance judging, metrics, bootstrap
 evaluate.py           dev/test protocol; writes results/
-evaluate_generation.py structural checks of generated answers
+evaluate_generation.py structural checks of generated answers (--split dev|test, RAG_PROMPT=v1|v2)
+review_answers.py     manual correctness rating of v1 answers (resumable)
+review_answers_v2.py  same 20 questions, v2 answers
 eval/                 questions.jsonl (103), unanswerable.jsonl (10), builder and validator
 results/              every table and figure in this README
 tests/                23 tests (cleaning, chunk invariants, metrics, retrievers, mock-server generators)
@@ -145,6 +147,4 @@ fetch_corpus.py       downloads the corpus at a pinned release tag (not committe
 
 ## Data and licensing
 
-scikit-learn documentation: BSD-3-Clause (<https://github.com/scikit-learn/scikit-learn>), fetched at
-tag 1.6.1 and not redistributed here. GloVe 6B vectors (Pennington et al., 2014) are downloaded from the
-gensim-data release under the Public Domain Dedication and License.
+scikit-learn documentation: BSD-3-Clause (https://github.com/scikit-learn/scikit-learn), fetched at tag 1.6.1 and not redistributed here. GloVe 6B vectors (Pennington et al., 2014) are downloaded from the gensim-data release under the Public Domain Dedication and License.
