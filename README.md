@@ -78,7 +78,10 @@ Per-question results: `results/test_per_question.csv`.
 | Mode | Cited a gold section (51 test Qs) | Abstains on 10 off-topic Qs | Citation check passed | Wrongly abstained on answerable Qs |
 |---|---|---|---|---|
 | Extractive baseline (top-2 passages quoted, no LLM) | 71% | 0% | n/a | n/a |
-| LLM (`llama3.1`, Ollama) | 73% (37/51) | 100% (10/10) | 61% (31/51) | 4% (2/51) |
+| LLM (`llama3.1`, Ollama), prompt v1 | 73% (37/51) | 100% (10/10) | 61% (31/51) | 4% (2/51) |
+| LLM (`llama3.1`, Ollama), prompt v2 (stricter) | 69% (35/51) | 100% (10/10) | 76% (39/51) | 10% (5/51) |
+
+- **Prompt v2.** Prompt v1 failed the citation check mainly because answers left some sentences uncited. Prompt v2 requires every sentence to end with a citation and to answer only when a passage directly states the answer. I compared the two on the dev questions first (citation check 48% to 73%; wrong abstentions 3 to 6 of 52), then ran v2 once on test: citation check 61% to 76%, gold-section citations 73% to 69% (within noise), wrong abstentions 2 to 5 of 51. So the stricter prompt buys cleaner citations at the price of refusing a few more answerable questions. Caveats: v2 was written after I had seen v1's test failures, so the dev numbers are the cleaner evidence; the 10 off-topic questions were reused for dev and test; and the manual correctness review above covers v1 answers only, so I do not know whether v2's answers are more or less correct.
 
 - **Manual correctness review.** I rated a random sample of 20 of the 51 answers (seed 42) by reading each against the scikit-learn docs: 15 correct, 1 partly correct, 3 wrong, 1 fair abstention (`results/generation_review.csv`). That is 75% fully correct (about 53%-89% as a 95% interval at n = 20), or 15 of 19 if the fair abstention is excluded. This was a single reviewer, not blinded, so treat it as indicative rather than a measured accuracy.
 - **Failure analysis.** All four answers rated wrong or partly correct had `cited_gold = False`: retrieval never surfaced the gold section. The partly correct one (q060) was an abstention on a question the docs do answer ("barely change" vs the docs' "low variance"). The three wrong answers were confident answers built on off-target passages: a faithful summary of the wrong section (q002, NaN handling), a plausible wrong guess (q050, "LDA" where the KL-divergence factorization is NMF), and an inference from silence (q026, claiming SVMs need no rescaling because the passages never mention it). So the main generation weakness is not abstaining when the passages are topically close but do not contain the answer; the grounding prompt handles clearly unrelated questions but not near-misses. Improving retrieval (the dense and reranker code paths, not yet run) should help here more than prompt changes.- **Abstention is the clear result.** The LLM refused all 10 off-topic questions, where the extractive baseline answered every one. With only 10 questions, "100%" means "at least roughly 70%", not exactly 100%.
@@ -115,6 +118,13 @@ For written answers instead of quoted passages, set a key before `ask.py` or the
 export ANTHROPIC_API_KEY=...                       # optionally RAG_MODEL=<model name>
 # or any OpenAI-compatible server, including a local one:
 export OPENAI_BASE_URL=http://localhost:11434/v1 RAG_MODEL=llama3.1
+```
+To evaluate generation (needs one of the LLM setups above):
+
+```
+RAG_PROMPT=v1 python evaluate_generation.py --split dev   # tune on dev
+RAG_PROMPT=v2 python evaluate_generation.py --split dev   # stricter prompt, dev
+RAG_PROMPT=v2 python evaluate_generation.py               # stricter prompt, test split (run once)
 ```
 
 ## Repository layout
