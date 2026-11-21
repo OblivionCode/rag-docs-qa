@@ -73,15 +73,18 @@ Per-question results: `results/test_per_question.csv`.
 
 ### Generation (structural checks only)
 
-`evaluate_generation.py` checks citation structure and abstention without needing a judge model. With no
-API key in the build environment, only the offline extractive baseline was run:
+`evaluate_generation.py` checks citation structure and abstention without needing a judge model. Run on the 51 test questions plus 10 off-topic ones, with `llama3.1` served locally through Ollama (OpenAI-compatible mode, temperature 0):
 
-| Mode | Cited a gold section (51 test Qs) | Abstains on 10 off-topic Qs |
-|---|---|---|
-| Extractive baseline (top-2 passages quoted, no LLM) | 71% | 0% (it always answers) |
+| Mode | Cited a gold section (51 test Qs) | Abstains on 10 off-topic Qs | Citation check passed | Wrongly abstained on answerable Qs |
+|---|---|---|---|---|
+| Extractive baseline (top-2 passages quoted, no LLM) | 71% | 0% | n/a | n/a |
+| LLM (`llama3.1`, Ollama) | 73% (37/51) | 100% (10/10) | 61% (31/51) | 4% (2/51) |
 
-That 0% is the point of a grounded LLM with an abstention rule: a retriever alone will happily return
-passages for "Who won the 2018 World Cup?". Run the script with your own key to fill in the LLM row.
+- **Abstention is the clear result.** The LLM refused all 10 off-topic questions, where the extractive baseline answered every one. With only 10 questions, "100%" means "at least roughly 70%", not exactly 100%.
+- **Citing a gold section did not improve** (71% to 73%, within noise at n = 51). It is also capped by retrieval: BM25 Recall@5 is 0.78, and the model cannot cite a section it was never shown.
+- **All 20 citation-check failures were uncited sentences**, not invented source numbers. The model often found the right passage but did not tag every sentence with `[n]`. A stricter prompt could fix this; I did not tune it, because that would mean tuning on the test split.
+- **The two wrong abstentions** (q060, q076) are vocabulary-mismatch retrieval misses of the kind described above, so the abstention rule behaved correctly given what it was shown.
+- **This measures citation structure and abstention, not correctness.** For example, q002 (NaN handling in decision trees) got a faithful but wrong answer because retrieval returned the imputation section. Single run, one small local model, so treat these numbers as indicative.
 
 ## What I did not run
 
