@@ -103,7 +103,7 @@ python fetch_corpus.py              # scikit-learn 1.6.1 user guide + GloVe vect
 python eval/validate_eval.py        # checks every gold label against the corpus
 python evaluate.py                  # full dev/test protocol, about 1 minute
 python evaluate.py --dense BAAI/bge-small-en-v1.5   # optional: adds dense rows (pip install sentence-transformers)
-python -m pytest -q                 # 23 tests
+python -m pytest -q                 # 24 tests
 python ask.py "How do I add more trees to an already trained forest?"
 streamlit run app.py
 ```
@@ -140,7 +140,7 @@ review_answers.py     manual correctness rating of v1 answers (resumable)
 review_answers_v2.py  same 20 questions, v2 answers
 eval/                 questions.jsonl (103), unanswerable.jsonl (10), builder and validator
 results/              every table and figure in this README
-tests/                23 tests (cleaning, chunk invariants, metrics, retrievers, mock-server generators)
+tests/                24 tests (cleaning, chunk invariants, metrics, retrievers, mock-server generators)
 app.py, ask.py        demo UI and CLI
 fetch_corpus.py       downloads the corpus at a pinned release tag (not committed)
 ```
