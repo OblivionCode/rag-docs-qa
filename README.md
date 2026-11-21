@@ -116,14 +116,15 @@ For written answers instead of quoted passages, set a key before `ask.py` or the
 export ANTHROPIC_API_KEY=...                       # optionally RAG_MODEL=<model name>
 # or any OpenAI-compatible server, including a local one:
 export OPENAI_BASE_URL=http://localhost:11434/v1 RAG_MODEL=llama3.1
+# unset ANTHROPIC_API_KEY if set; it takes priority
 ```
 To evaluate generation (needs one of the LLM setups above):
 
 ```
+RAG_PROMPT=v1 python evaluate_generation.py               # prompt v1, test split (the v1 row)
 RAG_PROMPT=v1 python evaluate_generation.py --split dev   # tune on dev
 RAG_PROMPT=v2 python evaluate_generation.py --split dev   # stricter prompt, dev
 RAG_PROMPT=v2 python evaluate_generation.py               # stricter prompt, test split (run once)
-python evaluate_generation.py                             # prompt v1, test split (the v1 row)
 ```
 
 ## Repository layout
