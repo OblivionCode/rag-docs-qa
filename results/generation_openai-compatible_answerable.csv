@@ -1,0 +1,237 @@
+id,question,answer,citation_ok,cited_gold,abstained
+q002,Can a decision tree take input rows that contain NaN without me imputing first?,"No [1]. According to the passage, scikit-learn estimators assume that all values in an array are numerical, and that all have and hold meaning. If a dataset contains missing values, it is incompatible with scikit-learn estimators.",False,False,False
+q004,How does the cost of predicting with a tree grow as the training set gets bigger?,The cost of predicting with a tree grows as the training set gets bigger as O[D \log(N)] [1].,True,False,False
+q006,"How does a forest estimate which inputs matter most, and why does position in the tree matter?","The forest estimates which inputs matter most by using the relative rank (i.e. depth) of a feature used as a decision node in a tree [4]. Features used at the top of the tree contribute to the final prediction decision of a larger fraction of the input samples, and the expected fraction of the samples they contribute to can thus be used as an estimate of the relative importance of the features [4]. 
+
+The position in the tree matters because features used at the top of the tree are more important for the prediction decision, and therefore contribute to a larger fraction of the input samples [4].",True,True,False
+q008,How do I grow more estimators on top of an already trained forest without starting over?,"You can grow more estimators on top of an already trained forest without starting over by setting `warm_start=True` and then calling `fit` again. This is supported by the following estimators:
+
+* RandomForestClassifier [1]
+* RandomForestClassifier [1]
+* Extra-Trees [1]
+* RandomTreesEmbedding [1]
+* GradientBoostingRegressor [2]
+* GradientBoostingClassifier [2]
+* IsolationForest [3]
+
+To do this, you can follow these steps:
+
+1. Train your model with `warm_start=False` (default) to get the initial set of estimators.
+2. Set `warm_start=True` and then call `fit` again to add more estimators.
+
+For example, with RandomForestClassifier:
+```
+>>> clf = RandomForestClassifier(n_estimators=10)
+>>> clf.fit(X, y)  # fit with 10 trees
+>>> clf.set_params(n_estimators=20, warm_start=True)
+>>> clf.fit(X, y)  # fit additional 10 trees
+```
+Note that when `random_state` is also set, the internal random state is preserved between `fit` calls, so training a model once with `n` estimators is the same as building the model iteratively via multiple `fit` calls. [1]",False,True,False
+q010,"In an ensemble that averages predicted class probabilities, how can some members count more than others?",Some members can count more than others by assigning specific weights to each classifier via the `weights` parameter. [1],True,True,False
+q012,How does a sequential ensemble of weak learners re-emphasize the examples it previously got wrong?,"At each boosting iteration, the sample weights are individually modified and the learning algorithm is reapplied to the reweighted data. At a given step, those training examples that were incorrectly predicted by the boosted model induced at the previous step have their weights increased, whereas the weights are decreased for those that were predicted correctly. [1]",False,True,False
+q014,Which model mixes two kinds of penalty and what parameter sets the balance between them?,"The model that mixes two kinds of penalty is Elastic Net, which is a convex combination of L2 and L1 penalties. The parameter that sets the balance between them is `l1_ratio`. 
+
+[4]",False,False,False
+q016,How can I predict the conditional median or a percentile rather than the mean?,"You can use the following methods to predict the conditional median or a percentile:
+
+* Use a Decision Tree Regressor with the `criterion=""mae""` parameter, which sets the predicted value of terminal nodes to the median of the node [1].
+* Use a QuantileRegressor, which estimates the median or other quantiles of y conditional on X [2].
+* Use a GradientBoostingRegressor with the `loss=""quantile""` parameter and set the `alpha` parameter to the quantile that should be predicted [2].
+* Use a DummyEstimator with the `quantile` strategy, which always predicts a user-provided quantile of the training targets [3].
+
+Note that these methods are not mutually exclusive, and you can use them in combination to achieve your desired prediction.",False,True,False
+q018,Which method finds a coefficient vector that is allowed only a fixed number of non-zero entries?,Orthogonal Matching Pursuit (OMP) finds a coefficient vector that is allowed only a fixed number of non-zero entries [1].,True,True,False
+q020,Is there an efficient built-in way to pick the penalty strength for ridge without refitting for every fold?,"Yes, there is an efficient built-in way to pick the penalty strength for ridge without refitting for every fold. 
+
+RidgeCV and RidgeClassifierCV implement ridge regression/classification with built-in cross-validation of the alpha parameter. They work in the same way as GridSearchCV except that it defaults to efficient Leave-One-Out cross-validation. [1]
+
+When using the default cross-validation, alpha cannot be 0 due to the formulation used to calculate Leave-One-Out error. See [RL2007]_ for details. [1]
+
+You can use RidgeCV or RidgeClassifierCV to pick the penalty strength for ridge without refitting for every fold. 
+
+For example, you can use RidgeCV with a range of alpha values: 
+```
+>>> import numpy as np
+>>> from sklearn import linear_model
+>>> reg = linear_model.RidgeCV(alphas=np.logspace(-6, 6, 13))
+>>> reg.fit([[0, 0], [0, 0], [1, 1]], [0, .1, 1])
+```
+This will perform Leave-One-Out cross-validation to find the best alpha value. [1]",False,True,False
+q022,Why can probability estimates from a support vector classifier disagree with its predicted labels?,"The support vector classifier (SVC) can give poor estimates of the class probabilities, which can disagree with its predicted labels. [1]",True,False,False
+q024,What do gamma and C each control in a radial-basis-function SVM?,"`gamma` defines how much influence a single training example has, and the larger `gamma` is, the closer other examples must be to be affected. [1]
+
+`C` trades off misclassification of training examples against simplicity of the decision surface. A low `C` makes the decision surface smooth, while a high `C` aims at classifying all training examples correctly. [1]",True,True,False
+q026,Do I need to rescale my features before fitting a support vector machine?,"No, you don't need to rescale your features before fitting a support vector machine. 
+
+[1] states that SVMs are effective in high dimensional spaces, and [2] mentions that the `libsvm`_-based implementation scales between O(n_{features} \times n_{samples}^2) and O(n_{features} \times n_{samples}^3) depending on how efficiently the `libsvm`_ cache is used in practice. However, it does not mention anything about rescaling features. 
+
+[3] mentions that for optimal performance, use C-ordered `numpy.ndarray` (dense) or `scipy.sparse.csr_matrix` (sparse) with `dtype=float64`, but this is about the format of the input data, not about rescaling the features.",True,False,False
+q028,Which clustering algorithm chooses exemplars by passing messages between pairs of points and needs no preset cluster count?,AffinityPropagation [1] chooses exemplars by passing messages between pairs of points and needs no preset cluster count.,True,True,False
+q030,Which density-based method can find clusters of varying density by building a hierarchy?,HDBSCAN can find clusters of varying density by building a hierarchy [2][4].,True,True,False
+q032,Which metric compares two clusterings by counting agreeing pairs and corrects for random chance?,The adjusted Rand index compares two clusterings by counting agreeing pairs and corrects for random chance [3].,True,True,False
+q034,Which algorithm summarizes data into a tree of compact feature nodes so it can cluster big data in one pass?,"The BIRCH algorithm summarizes data into a tree of compact feature nodes so it can cluster big data in one pass. [1]
+
+This algorithm can be viewed as an instance or data reduction method, since it reduces the input data to a set of subclusters which are obtained directly from the leaves of the CFT. [3]
+
+The BIRCH algorithm has two parameters, the threshold and the branching factor. The branching factor limits the number of subclusters in a node and the threshold limits the distance between the entering sample and the existing subclusters. [1]",True,True,False
+q036,Is there a divisive hierarchical form of k-means that repeatedly splits one cluster?,Yes. [1],True,True,False
+q038,How do I keep the class proportions the same in every fold?,"You can use StratifiedKFold to keep the class proportions the same in every fold. [2] This is because StratifiedKFold is a variation of k-fold which returns stratified folds: each set contains approximately the same percentage of samples of each target class as the complete set. [2]
+
+Alternatively, you can use StratifiedGroupKFold if you have grouped data. [1] StratifiedGroupKFold is a better option if class proportions must be balanced across folds. [1]
+
+You can also use RepeatedStratifiedKFold to repeat Stratified K-Fold n times with different randomization in each repetition. [4] This can be useful if you want to average the results of multiple runs to reduce the effect of randomization.",True,True,False
+q040,How can I check whether my classifier's score is statistically better than what shuffled labels would give?,"You can check whether your classifier's score is statistically better than what shuffled labels would give by using the `permutation_test_score` function, which provides a permutation-based p-value. This function generates a null distribution by calculating `n_permutations` different permutations of the data, and the p-value output is the fraction of permutations for which the average cross-validation score obtained by the model is better than the cross-validation score obtained by the model using the original data.
+
+[1]",False,True,False
+q042,How can I make skewed features look more bell-shaped using power transforms?,"You can use the PowerTransformer class, which currently provides two power transformations: the Yeo-Johnson transform and the Box-Cox transform. These transformations aim to map data from any distribution to as close to a Gaussian distribution as possible, which can help to stabilize variance and minimize skewness. 
+
+[1]",False,True,False
+q044,How can I chop a continuous feature into intervals that each hold the same number of samples?,"You can use the KBinsDiscretizer to chop a continuous feature into intervals that each hold the same number of samples. 
+
+To do this, you need to specify the number of bins (k) for each feature. The KBinsDiscretizer will then divide each feature into k intervals, each containing approximately the same number of samples.
+
+[1]",False,True,False
+q046,How can rare categories be lumped together when one-hot encoding?,"To lump rare categories together when one-hot encoding, you can use the `max_categories` parameter of the `OneHotEncoder`. This will result in all but the specified categories to be considered infrequent, leading to fewer features in the output.
+
+[3]",False,True,False
+q048,How do I do principal component analysis when the dataset is too big to fit in memory?,"You can use the `IncrementalPCA` object, which allows for partial computations and can process the data in a minibatch fashion. This makes it possible to implement out-of-core Principal Component Analysis. You can use its `partial_fit` method on chunks of data fetched sequentially from the local hard drive or a network database, or call its `fit` method on a memory mapped file using `numpy.memmap`. [1]",False,True,False
+q050,Which factorization lets me minimize Kullback-Leibler divergence rather than Frobenius distance?,Latent Dirichlet Allocation (LDA) [4].,True,False,False
+q052,How can I separate mixed signals into additive non-Gaussian sources?,You can use Independent Component Analysis (ICA) to separate mixed signals into additive non-Gaussian sources. [1] ICA is implemented in scikit-learn using the Fast ICA algorithm. It is classically used to separate mixed signals (a problem known as blind source separation). [1],True,True,False
+q054,How can I vectorize features without keeping a vocabulary in memory?,"You can use the `CountVectorizer` with the `max_features` parameter set to a large number, such as `100000`, to limit the size of the vocabulary [1]. However, this may not be the most efficient solution.
+
+Alternatively, you can use the `HashingVectorizer` which does not store the vocabulary in memory [1]. This is because it uses a hash function to map words to indices, rather than storing a mapping of words to indices.
+
+You can also use the `TfidfVectorizer` which is similar to `CountVectorizer` but it uses a sparse representation of the matrix, which can be more memory efficient [2].
+
+Note that the `HashingVectorizer` is not as accurate as the `CountVectorizer` because it uses a hash function to map words to indices, which can lead to collisions [1].
+
+References:
+
+[1] (source: feature_extraction.rst, section: Feature extraction > Text feature extraction > Vectorizing a large text corpus with the hashing trick)
+[2] (source: feature_extraction.rst, section: Feature extraction > Text feature extraction > Sparsity)",False,False,False
+q056,Why are raw term counts rescaled by how rare a word is across documents?,"Raw term counts are rescaled by how rare a word is across documents because frequent terms carry very little meaningful information about the actual contents of the document [1]. If we were to feed the direct count data directly to a classifier, those very frequent terms would shadow the frequencies of rarer yet more interesting terms [2].",True,True,False
+q058,How does repeatedly dropping the least important features based on model coefficients work?,"Repeatedly dropping the least important features based on model coefficients works as follows: 
+
+First, the estimator is trained on the initial set of features and the importance of each feature is obtained either through any specific attribute (such as `coef_`, `feature_importances_`) or callable [5]. 
+
+Then, the least important features are pruned from the current set of features. That procedure is recursively repeated on the pruned set until the desired number of features to select is eventually reached [5].
+
+[5]",False,True,False
+q060,How can I automatically discard columns that barely change?,I don't know based on the provided documents.,True,False,True
+q062,What metric suits imbalanced classes by averaging recall obtained on each class?,"The balanced accuracy score suits imbalanced classes by averaging recall obtained on each class. [1]
+
+Note that the balanced accuracy score is the macro-average of recall scores per class, which is equivalent to raw accuracy where each sample is weighted according to the inverse prevalence of its true class. [1]",True,True,False
+q064,How can I score predicted probabilities by their mean squared difference from the actual outcomes?,You can use the `brier_score_loss` function to score predicted probabilities by their mean squared difference from the actual outcomes. [1],True,True,False
+q066,Which ranking metric rewards putting relevant items near the top of the list?,"Normalized Discounted Cumulative Gain (NDCG) rewards putting relevant items near the top of the list. [1][2]
+
+NDCG is a ranking metric that compares a predicted order to ground-truth scores, such as the relevance of answers to a query. It is calculated as the DCG score divided by the DCG score obtained for the ground-truth, and is always between 0 and 1. [2]
+
+The DCG score is calculated as the sum of the ground-truth scores divided by the logarithm of the rank, and the NDCG score is the DCG score divided by the DCG score obtained for the ground-truth. [2]
+
+NDCG can take into account relevance scores, rather than a ground-truth ranking, making it a suitable metric for tasks where the ground-truth consists of actual usefulness scores. [2]",True,True,False
+q068,How can I define my own scoring function so it can be used in model selection tools?,"You can define your own scoring function by passing a custom metric callable (e.g., function) to the `scoring` parameter of model selection tools, such as GridSearchCV. [1]
+
+For example, you can pass a custom metric function like this:
+```python
+from sklearn.model_selection import GridSearchCV
+from sklearn.svm import SVC
+
+def my_custom_metric(y_true, y_pred):
+    # your custom metric implementation here
+    pass
+
+grid_search = GridSearchCV(SVC(), param_grid, scoring=my_custom_metric)
+```
+Note that the custom metric function should take two arguments: `y_true` and `y_pred`, which are the true labels and predicted labels, respectively. [1]",True,False,False
+q070,Which parametric method fits a logistic curve to a classifier's scores to fix its probabilities?,"Platt scaling fits a logistic curve to a classifier's scores to fix its probabilities. 
+
+[3] The same probability calibration procedure is available for all estimators via the CalibratedClassifierCV (see calibration). In the case of SVC and NuSVC, this procedure is builtin in `libsvm`_ which is used under the hood, so it does not rely on scikit-learn's CalibratedClassifierCV. 
+
+[3] In the binary case, the probabilities are calibrated using Platt scaling [#1]_: logistic regression on the SVM's scores, fit by an additional cross-validation on the training data.",True,False,False
+q072,How can simple covariance functions be added or multiplied to form a richer one?,"Unfortunately, the provided passages do not contain an answer to the question ""How can simple covariance functions be added or multiplied to form a richer one?""",False,False,False
+q074,How can missing values be estimated by modelling each feature as a function of the others in turn?,"The IterativeImputer class models each feature with missing values as a function of other features, and uses that estimate for imputation. It does so in an iterated round-robin fashion: at each step, a feature column is designated as output `y` and the other feature columns are treated as inputs `X`. A regressor is fit on `(X, y)` for known `y`. Then, the regressor is used to predict the missing values of `y`.  This is done for each feature in an iterative fashion, and then is repeated for `max_iter` imputation rounds. The results of the final imputation round are returned. [2]",False,True,False
+q076,How can I keep binary flags telling me which entries were originally absent?,I don't know based on the provided documents.,True,False,True
+q078,Which technique places points in low dimensions to reproduce a matrix of pairwise dissimilarities?,"Based on the provided passages, the answer is:
+
+Multi-dimensional Scaling (MDS) [1]
+
+Specifically, non-metric MDS focuses on the ordination of the data, where the embedding should enforce that if S_{ij} > S_{jk}, then the embedding should enforce d_{ij} < d_{jk} [4].",True,True,False
+q080,Which data structures speed up neighbor lookups compared with checking every pair?,"Ball tree and KD tree data structures can speed up neighbor lookups compared with checking every pair. 
+
+[1] states that ""Ball tree and *KD tree* query times can be greatly influenced by data structure.  In general, sparser data with a smaller intrinsic dimensionality leads to faster query times.""
+
+[2] also mentions that ""The ball tree recursively divides the data into nodes defined by a centroid C and radius r, such that each point in the node lies within the hyper-sphere defined by r and C.""
+
+[5] explains that ""The KD tree is a binary tree structure which recursively partitions the parameter space along the data axes, dividing it into nested orthotropic regions into which data points are filed.""
+
+[4] mentions that ""The most naive neighbor search implementation involves the brute-force computation of distances between all pairs of points in the dataset: for N samples in D dimensions, this approach scales as O[D N^2].""
+
+So, Ball tree and KD tree data structures speed up neighbor lookups compared with checking every pair.",True,False,False
+q082,How can naive Bayes be trained on data that does not fit in memory?,"Naive Bayes models can be used to tackle large scale classification problems for which the full training set might not fit in memory. To handle this case, MultinomialNB, BernoulliNB, and GaussianNB expose a `partial_fit` method that can be used incrementally as done with other classifiers. [1]
+
+The `partial_fit` method call of naive Bayes models introduces some computational overhead. It is recommended to use data chunk sizes that are as large as possible, that is as the available RAM allows. [1]
+
+Contrary to the `fit` method, the first call to `partial_fit` needs to be passed the list of all the expected class labels. [1]",False,True,False
+q084,Which anomaly score compares a point's density with that of its neighbors?,"The Local Outlier Factor (LOF) algorithm compares a point's density with that of its neighbors. [2]
+
+The LOF score of an observation is equal to the ratio of the average local density of its k-nearest neighbors, and its own local density: a normal instance is expected to have a local density similar to that of its neighbors, while abnormal data are expected to have much smaller local density. [2]
+
+This is in contrast to the LocalOutlierFactor (LOF) algorithm, which computes a score (called local outlier factor) reflecting the degree of abnormality of the observations, but does not explicitly compare a point's density with that of its neighbors. [2]
+
+However, the LocalOutlierFactor (LOF) algorithm does measure the local density deviation of a given data point with respect to its neighbors. [2]
+
+Therefore, the correct answer is the Local Outlier Factor (LOF) algorithm. [2]",True,True,False
+q086,How can I estimate a precision matrix with many zeros to reveal conditional independence?,"You can estimate a sparse precision matrix using the GraphicalLasso estimator, which uses an l1 penalty to enforce sparsity on the precision matrix. The higher the `alpha` parameter, the more sparse the precision matrix. [1]
+
+Alternatively, you can use the GraphicalLassoCV object, which uses cross-validation to automatically set the `alpha` parameter. [1]
+
+This is known as covariance selection, which is useful for learning independence relations from the data. [1]",False,True,False
+q088,Why can the importance computed from tree splits be biased toward features with many unique values?,"They favor high cardinality features, that is features with many unique values. [2]",True,False,False
+q090,How can a search start many candidates on few resources and keep only the best performers?,"The search can start many candidates on few resources and keep only the best performers by using the `aggressive_elimination` parameter, which forces the search process to end up with less than `factor` candidates at the last iteration [4]. 
+
+Alternatively, the process can also stop at the first iteration which evaluates `factor` candidates, as the best candidate is the best out of these candidates [3].",True,True,False
+q092,How can I avoid recomputing slow preprocessing steps every time I refit a chain of steps?,"You can avoid recomputing slow preprocessing steps every time you refit a chain of steps by using a Pipeline with caching enabled. This can be done by setting the `memory` parameter of the Pipeline to a directory where the transformers will be cached, or by passing a `joblib.Memory` object to the `memory` parameter. 
+
+[2]",False,True,False
+q094,Which strategy encodes each class as a binary code word and trains one model per bit?,OutputCodeClassifier [1].,True,True,False
+q096,What controls when stochastic gradient training stops because the loss no longer improves?,"The improvement is evaluated with absolute tolerance `tol`, and the algorithm stops in any case after a maximum number of iteration `max_iter`. The criterion is evaluated once by epoch, and the algorithm stops when the criterion does not improve `n_iter_no_change` times in a row. [1]
+
+In both cases, the criterion is evaluated once by epoch, and the algorithm stops when the criterion does not improve `n_iter_no_change` times in a row. The improvement is evaluated with absolute tolerance `tol`, and the algorithm stops in any case after a maximum number of iteration `max_iter`. [1]
+
+The improvement is evaluated with absolute tolerance `tol`, and the algorithm stops in any case after a maximum number of iteration `max_iter`. The criterion is evaluated once by epoch, and the algorithm stops when the criterion does not improve `n_iter_no_change` times in a row. [1]
+
+Note that for technical reasons, using a callable as a scorer is significantly slower than using the loss. By default, early-stopping is performed if there are at least 10,000 samples in the training set, using the validation loss. [2]
+
+The improvement is evaluated with absolute tolerance `tol`, and the algorithm stops in any case after a maximum number of iteration `max_iter`. The criterion is evaluated once by epoch, and the algorithm stops when the criterion does not improve `n_iter_no_change` times in a row. [1]
+
+The improvement is evaluated with absolute tolerance `tol`, and the algorithm stops in any case after a maximum number of iteration `max_iter`. The criterion is evaluated once by epoch, and the algorithm stops when the criterion does not improve `n_iter_no_change` times in a row. [1]",False,True,False
+q098,What guarantees that distances between points are approximately preserved after projecting to far fewer dimensions?,The Johnson-Lindenstrauss lemma guarantees that distances between points are approximately preserved after projecting to far fewer dimensions [1]. This lemma is the main theoretical result behind the efficiency of random projection [1].,True,True,False
+q100,How can discriminant analysis stay stable when there are few samples relative to the number of features?,Shrinkage can be used to improve the estimation of covariance matrices in situations where the number of training samples is small compared to the number of features [4].,True,True,False
+q102,How can I plot training and validation scores as a single hyperparameter varies?,"You can plot training and validation scores as a single hyperparameter varies using the `validation_curve` function. 
+
+The function `validation_curve` can help in this case::
+
+  >>> import numpy as np
+  >>> from sklearn.model_selection import validation_curve
+  >>> from sklearn.datasets import load_iris
+  >>> from sklearn.svm import SVC
+
+  >>> np.random.seed(0)
+  >>> X, y = load_iris(return_X_y=True)
+  >>> indices = np.arange(y.shape[0])
+  >>> np.random.shuffle(indices)
+  >>> X, y = X[indices], y[indices]
+
+  >>> train_scores, valid_scores = validation_curve(
+  ...     SVC(kernel=""linear""), X, y, param_name=""C"", param_range=np.logspace(-7, 3, 3),
+  ... )
+  >>> train_scores
+  array([[0.90..., 0.94..., 0.91..., 0.89..., 0.92...],
+         [0.9... , 0.92..., 0.93..., 0.92..., 0.93...],
+         [0.97..., 1...   , 0.98..., 0.97..., 0.99...]])
+  >>> valid_scores
+  array([[0.9..., 0.9... , 0.9... , 0.96..., 0.9... ],
+         [0.9..., 0.83..., 0.96..., 0.96..., 0.93...],
+         [1.... , 0.93..., 1....  , 1....  , 0.9... ]])
+
+[1][4]",False,True,False

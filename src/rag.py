@@ -96,7 +96,7 @@ class ExtractiveGenerator:
         return "\n\n".join(x for x in parts if x) or ABSTAIN
 
 
-def _post_json(url: str, headers: dict, body: dict, timeout: float = 60.0) -> dict:
+def _post_json(url: str, headers: dict, body: dict, timeout: float = 600.0) -> dict:
     req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={"content-type": "application/json", **headers})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.loads(r.read().decode())
@@ -123,7 +123,7 @@ class OpenAICompatibleGenerator:
     name = "openai-compatible"
 
     def __init__(self, model: str | None = None, api_key: str | None = None,
-                 base_url: str | None = None, max_tokens: int = 600):
+                 base_url: str | None = None, max_tokens: int = 2000):
         self.model = model or os.environ.get("RAG_MODEL", "gpt-4o-mini")
         self.api_key = api_key or os.environ.get("OPENAI_API_KEY", "not-needed")
         self.base_url = (base_url or os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")).rstrip("/")
@@ -134,7 +134,8 @@ class OpenAICompatibleGenerator:
                 "messages": [{"role": "system", "content": SYSTEM_PROMPT},
                              {"role": "user", "content": build_prompt(question, passages)}]}
         out = _post_json(f"{self.base_url}/chat/completions", {"authorization": f"Bearer {self.api_key}"}, body)
-        return out["choices"][0]["message"]["content"].strip()
+        msg = out["choices"][0]["message"]
+        return (msg.get("content") or "").strip()
 
 
 def generator_from_env():
