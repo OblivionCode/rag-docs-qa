@@ -80,7 +80,8 @@ Per-question results: `results/test_per_question.csv`.
 | Extractive baseline (top-2 passages quoted, no LLM) | 71% | 0% | n/a | n/a |
 | LLM (`llama3.1`, Ollama) | 73% (37/51) | 100% (10/10) | 61% (31/51) | 4% (2/51) |
 
-- **Abstention is the clear result.** The LLM refused all 10 off-topic questions, where the extractive baseline answered every one. With only 10 questions, "100%" means "at least roughly 70%", not exactly 100%.
+- **Manual correctness review.** I rated a random sample of 20 of the 51 answers (seed 42) by reading each against the scikit-learn docs: 15 correct, 1 partly correct, 3 wrong, 1 fair abstention (`results/generation_review.csv`). That is 75% fully correct (about 53%-89% as a 95% interval at n = 20), or 15 of 19 if the fair abstention is excluded. This was a single reviewer, not blinded, so treat it as indicative rather than a measured accuracy.
+- **Failure analysis.** All four answers rated wrong or partly correct had `cited_gold = False`: retrieval never surfaced the gold section. The partly correct one (q060) was an abstention on a question the docs do answer ("barely change" vs the docs' "low variance"). The three wrong answers were confident answers built on off-target passages: a faithful summary of the wrong section (q002, NaN handling), a plausible wrong guess (q050, "LDA" where the KL-divergence factorization is NMF), and an inference from silence (q026, claiming SVMs need no rescaling because the passages never mention it). So the main generation weakness is not abstaining when the passages are topically close but do not contain the answer; the grounding prompt handles clearly unrelated questions but not near-misses. Improving retrieval (the dense and reranker code paths, not yet run) should help here more than prompt changes.- **Abstention is the clear result.** The LLM refused all 10 off-topic questions, where the extractive baseline answered every one. With only 10 questions, "100%" means "at least roughly 70%", not exactly 100%.
 - **Citing a gold section did not improve** (71% to 73%, within noise at n = 51). It is also capped by retrieval: BM25 Recall@5 is 0.78, and the model cannot cite a section it was never shown.
 - **All 20 citation-check failures were uncited sentences**, not invented source numbers. The model often found the right passage but did not tag every sentence with `[n]`. A stricter prompt could fix this; I did not tune it, because that would mean tuning on the test split.
 - **The two wrong abstentions** (q060, q076) are vocabulary-mismatch retrieval misses of the kind described above, so the abstention rule behaved correctly given what it was shown.
@@ -89,9 +90,9 @@ Per-question results: `results/test_per_question.csv`.
 ## What I did not run
 
 - **Cross-encoder reranking** is implemented (`CrossEncoderReranker`) and unit-tested with a stub scorer, but I did not evaluate it.
-- **LLM answer quality.** The Anthropic and OpenAI-compatible generators were tested against a local mock server (request shape, headers, response parsing), not the live APIs. Only the extractive baseline was run. Whether LLM answers are *correct* needs a human or judge-model review of `results/generation_*.csv`.
 - **Dense model tuning.** One dense model (bge-small-en-v1.5) was run with default settings and no tuning on dev. Other models might behave differently.
 - Single corpus (one library's docs), one question-writer, ~50 test questions.
+- **LLM answer correctness** was spot-checked on 20 answers by one reviewer (above), not evaluated at scale or with a judge model. Generation was run only with a local `llama3.1` via Ollama's OpenAI-compatible endpoint; the Anthropic generator and hosted APIs were not run against the live services.
 
 ## Run it
 
