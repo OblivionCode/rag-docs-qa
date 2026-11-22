@@ -8,7 +8,7 @@ intervals, and an honest look at what worked and what did not.
 ![Retrieval comparison on the test split](results/test_retrieval_comparison.png)
 
 **Headline:** tuned BM25 over section-aware chunks had the best MRR@10 (0.67, 95% CI 0.55 to 0.78) and Recall@5 of 0.78 on 51 held-out questions. A hybrid of BM25 and a small dense embedding model (bge-small-en-v1.5) had the highest Recall@5 (0.88; +0.10 over BM25 in an exploratory paired test, CI 0.02 to 0.18) and nDCG@10 (0.58), but its MRR was not significantly different from BM25's, and it was roughly
-200 times slower per query on CPU (314 ms vs 1.3 ms). Dense retrieval alone (MRR 0.59) was also not significantly different from BM25. TF-IDF, LSA, averaged GloVe vectors and three of the other hybrids were significantly worse.LLM generation was run only with a local `llama3.1` (see [Generation](#generation-structural-checks-and-a-small-manual-review)): it refuses off-topic questions reliably, but answer quality is bounded by retrieval.
+240 times slower per query on CPU (314 ms vs 1.3 ms). Dense retrieval alone (MRR 0.59) was also not significantly different from BM25. TF-IDF, LSA, averaged GloVe vectors and three of the other hybrids were significantly worse. A MiniLM cross-encoder reranker on top of the hybrid raised Recall@1 and MRR@10 but not significantly (see [Reranking](#reranking-exploratory)). LLM generation was run only with a local `llama3.1` (see [Generation](#generation-structural-checks-and-a-small-manual-review)): it refuses off-topic questions reliably, but answer quality is bounded by retrieval.
 ## What is in the pipeline
 
 | Stage | Implementation |
@@ -24,7 +24,7 @@ intervals, and an honest look at what worked and what did not.
 ## How retrieval was evaluated
 
 - **103 questions**, each written about one section of the guide and phrased in natural language (not copying the heading) so keyword matching gets no free ride. Each has a gold section and an `evidence` regex; `eval/validate_eval.py` checks that the regex really appears inside the gold section, which caught 7 labeling problems while building the set (3 evidence phrases that were not in the section, 4 ambiguous section names).
-- **Split:** 52 dev / 51 test, disjoint. Everything was chosen on dev; the test split was used only to report (the protocol is in `evaluate.py`).
+- **Split:** 52 dev / 51 test, disjoint. Every retrieval choice was made on dev; the test split was used only to report (the protocol is in `evaluate.py`). The generation prompt is a partial exception, described under Generation.
 - **Relevance** is judged on character offsets: a retrieved chunk is a hit if it overlaps the gold section by at least 50% of the smaller of the two. This makes results comparable across chunking strategies.
 - **Metrics:** Recall@k (any gold hit in the top k), MRR@10, nDCG@10, with 1,000-sample bootstrap confidence intervals over questions and paired bootstrap differences between systems.
 - Two full runs give identical metrics and the same selected configuration (everything is seeded; only latency varies).
@@ -70,6 +70,21 @@ Five questions were missed at k=5 by all four base retrievers. Typical causes:
 
 Per-question results: `results/test_per_question.csv`.
 
+### Reranking (exploratory)
+
+`evaluate_rerank.py` re-scores the top candidates of a first-stage retriever with a cross-encoder (`cross-encoder/ms-marco-MiniLM-L-6-v2`). On dev it chose the BM25+dense hybrid as first stage with the top 50 candidates reranked (the deepest setting tried). Test split, run once:
+
+| Retriever | Recall@1 | Recall@5 | Recall@10 | MRR@10 | nDCG@10 | ms/query |
+|---|---|---|---|---|---|---|
+| BM25 | 0.57 | 0.78 | 0.88 | 0.671 (0.55-0.78) | 0.566 | 0.7 |
+| Hybrid BM25+dense | 0.51 | 0.88 | 0.88 | 0.657 (0.54-0.77) | 0.579 | 18.7 |
+| Hybrid BM25+dense + rerank@50 | 0.67 | 0.86 | 0.88 | 0.750 (0.64-0.85) | 0.622 | 130.6 |
+
+- **Reranking raised Recall@1 and MRR@10, but no difference is statistically significant.** Paired MRR@10 difference: +0.078 vs BM25 (CI -0.017 to 0.168) and +0.093 vs the hybrid (CI -0.001 to 0.189). Recall@5: +0.078 vs BM25 (CI 0.000 to 0.176), -0.020 vs the hybrid (CI -0.098 to 0.039).
+- **Recall@10 is unchanged (0.88).** A reranker reorders candidates; it cannot retrieve sections the first stage missed.
+- **Cost:** 130.6 ms per query vs 0.7 ms for BM25. These timings come from a different setup than the latencies in the main table (the hybrid took 18.7 ms here vs 314 ms there), so compare rows within this table only.
+- **Caveats:** exploratory, 51 questions, one small cross-encoder, one test run. The best dev setting was the deepest candidate list tried (50), so deeper lists were not explored, and the four paired comparisons are not corrected for multiple testing.
+
 ### Generation (structural checks and a small manual review)
 
 `evaluate_generation.py` checks citation structure and abstention without needing a judge model. Run on the 51 test questions plus 10 off-topic ones, with `llama3.1` served locally through Ollama (OpenAI-compatible mode, temperature 0):
@@ -85,12 +100,12 @@ Per-question results: `results/test_per_question.csv`.
 - **Citation failures (v1).** All 20 failures of the citation check were uncited sentences, not invented source numbers.
 - **Prompt v2** requires every sentence to end with a citation and to answer only when a passage directly states the answer. On dev: citation check 48% to 73%, wrong abstentions 3 to 6 of 52. Run once on test: citation check 61% to 76%, gold-section citations 73% to 69% (within noise), wrong abstentions 2 to 5 of 51. So v2 buys cleaner citations at the price of refusing a few more answerable questions. v2 was written after I had seen v1's test failures, so the dev numbers are the cleaner evidence, and the 10 off-topic questions were reused for dev and test.
 - **Manual correctness review.** I rated a random sample of 20 of the 51 answers (seed 42) against the scikit-learn docs: 15 correct, 1 partly correct, 3 wrong, 1 fair abstention (`results/generation_review.csv`), i.e. 75% fully correct (about 53%-89% as a 95% interval at n = 20). I repeated the review on the same 20 questions with v2's answers and got the same counts (`results/generation_review_v2.csv`). Both reviews were by one person, and I knew the v1 ratings when rating v2, so this is indicative, not a blind comparison, and cannot detect small differences.
-- **Failure analysis (v1 sample).** All four answers rated wrong or partly correct had `cited_gold = False`: retrieval never surfaced the gold section. The partly correct one (q060) was an abstention on a question the docs do answer ("barely change" vs the docs' "low variance"). The three wrong answers were confident answers built on off-target passages: a faithful summary of the wrong section (q002, NaN handling), a plausible wrong guess (q050, "LDA" where the KL-divergence factorization is NMF), and an inference from silence (q026, claiming SVMs need no rescaling because the passages never mention it). So the main generation weakness is not abstaining when passages are topically close but do not contain the answer. The two wrong abstentions on the test split (q060, q076) are likely the same kind of retrieval miss. Better retrieval (the dense hybrid above, or the not-yet-run reranker) should help more than prompt changes.
+- **Failure analysis (v1 sample).** All four answers rated wrong or partly correct had `cited_gold = False`: retrieval never surfaced the gold section. The partly correct one (q060) was an abstention on a question the docs do answer ("barely change" vs the docs' "low variance"). The three wrong answers were confident answers built on off-target passages: a faithful summary of the wrong section (q002, NaN handling), a plausible wrong guess (q050, "LDA" where the KL-divergence factorization is NMF), and an inference from silence (q026, claiming SVMs need no rescaling because the passages never mention it). So the main generation weakness is not abstaining when passages are topically close but do not contain the answer. The two wrong abstentions on the test split (q060, q076) are likely the same kind of retrieval miss. Better retrieval (the dense hybrid above; the reranker above only reorders candidates, so it cannot recover sections that were never retrieved) should help more than prompt changes.
 - **Caveats.** Single run, one small local model. All 103 prompts fit within Ollama's default 4096-token context (longest: 1,159 words, about 2,200 tokens by estimate), so truncation did not affect the results. Run with Ollama 0.40.17 and the llama3.1 8B model (digest 667b0c1932bc).
 
 ## What I did not run
 
-- **Cross-encoder reranking** is implemented (`CrossEncoderReranker`) and unit-tested with a stub scorer, but I did not evaluate it.
+- **Reranking** was evaluated with one small cross-encoder (`ms-marco-MiniLM-L-6-v2`), candidate depths up to 50, in a single test run (see [Reranking](#reranking-exploratory)). Larger or fine-tuned rerankers and deeper candidate lists were not tried, and the older `CrossEncoderReranker` class is still only unit-tested with a stub scorer (the evaluation uses a separate wrapper in `evaluate_rerank.py`).
 - **Dense model tuning.** One dense model (bge-small-en-v1.5) was run with default settings and no tuning on dev. Other models might behave differently.
 - Single corpus (one library's docs), one question-writer, ~50 test questions.
 - **LLM answer correctness** was spot-checked on 20 answers by one reviewer (above), not evaluated at scale or with a judge model. Generation was run only with a local `llama3.1` via Ollama's OpenAI-compatible endpoint; the Anthropic generator and hosted APIs were not run against the live services.
@@ -122,9 +137,15 @@ To evaluate generation (needs one of the LLM setups above):
 
 ```
 RAG_PROMPT=v1 python evaluate_generation.py               # prompt v1, test split (the v1 row)
-RAG_PROMPT=v1 python evaluate_generation.py --split dev   # tune on dev
+RAG_PROMPT=v1 python evaluate_generation.py --split dev   # baseline on dev
 RAG_PROMPT=v2 python evaluate_generation.py --split dev   # stricter prompt, dev
 RAG_PROMPT=v2 python evaluate_generation.py               # stricter prompt, test split (run once)
+```
+To evaluate the reranker (needs `pip install sentence-transformers`):
+
+```
+python evaluate_rerank.py          # tune on dev
+python evaluate_rerank.py --test   # test split, run once
 ```
 
 ## Repository layout
@@ -136,6 +157,7 @@ src/rag.py            prompt, generators, citation verifier, pipeline
 src/evaluation.py     relevance judging, metrics, bootstrap
 evaluate.py           dev/test protocol; writes results/
 evaluate_generation.py structural checks of generated answers (--split dev|test, RAG_PROMPT=v1|v2)
+evaluate_rerank.py    cross-encoder reranking (dev tuning, then --test once)
 review_answers.py     manual correctness rating of v1 answers (resumable)
 review_answers_v2.py  same 20 questions, v2 answers
 eval/                 questions.jsonl (103), unanswerable.jsonl (10), builder and validator
