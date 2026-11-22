@@ -7,8 +7,8 @@ intervals, and an honest look at what worked and what did not.
 
 ![Retrieval comparison on the test split](results/test_retrieval_comparison.png)
 
-**Headline:** tuned BM25 over section-aware chunks had the best MRR@10 (0.67, 95% CI 0.55 to 0.78) and Recall@5 of 0.78 on 51 held-out questions. A hybrid of BM25 and a small dense embedding model (bge-small-en-v1.5) had the highest Recall@5 (0.88; +0.10 over BM25 in an exploratory paired test, CI 0.02 to 0.18) and nDCG@10 (0.58), but its MRR was not significantly different from BM25's, and it was roughly
-240 times slower per query on CPU (314 ms vs 1.3 ms). Dense retrieval alone (MRR 0.59) was also not significantly different from BM25. TF-IDF, LSA, averaged GloVe vectors and three of the other hybrids were significantly worse. A MiniLM cross-encoder reranker on top of the hybrid raised Recall@1 and MRR@10 but not significantly (see [Reranking](#reranking-exploratory)). LLM generation was run only with a local `llama3.1` (see [Generation](#generation-structural-checks-and-a-small-manual-review)): it refuses off-topic questions reliably, but answer quality is bounded by retrieval.
+**Headline:** tuned BM25 over section-aware chunks had the best MRR@10 (0.67, 95% CI 0.55 to 0.78) and Recall@5 of 0.78 on 51 held-out questions. A hybrid of BM25 and a small dense embedding model (bge-small-en-v1.5) had the highest Recall@5 (0.88; +0.10 over BM25 in an exploratory paired test, CI 0.02 to 0.18) and nDCG@10 (0.58), but its MRR was not significantly different from BM25's, and it was roughly 240 times slower per query on CPU (314 ms vs 1.3 ms). Dense retrieval alone (MRR 0.59) was also not significantly different from BM25. TF-IDF, LSA, averaged GloVe vectors and three of the other hybrids were significantly worse. A MiniLM cross-encoder reranker on top of the hybrid raised Recall@1 and MRR@10 but not significantly (see [Reranking](#reranking-exploratory)). LLM generation was run only with a local `llama3.1` (see [Generation](#generation-structural-checks-and-a-small-manual-review)): it refuses off-topic questions reliably, but answer quality is bounded by retrieval.
+
 ## What is in the pipeline
 
 | Stage | Implementation |
@@ -99,7 +99,7 @@ Per-question results: `results/test_per_question.csv`.
 - **Citing a gold section did not improve** (71% to 73% for v1, within noise at n = 51). It is capped by retrieval: BM25 Recall@5 is 0.78, and the model cannot cite a section it was never shown.
 - **Citation failures (v1).** All 20 failures of the citation check were uncited sentences, not invented source numbers.
 - **Prompt v2** requires every sentence to end with a citation and to answer only when a passage directly states the answer. On dev: citation check 48% to 73%, wrong abstentions 3 to 6 of 52. Run once on test: citation check 61% to 76%, gold-section citations 73% to 69% (within noise), wrong abstentions 2 to 5 of 51. So v2 buys cleaner citations at the price of refusing a few more answerable questions. v2 was written after I had seen v1's test failures, so the dev numbers are the cleaner evidence, and the 10 off-topic questions were reused for dev and test.
-- **Manual correctness review.** I rated a random sample of 20 of the 51 answers (seed 42) against the scikit-learn docs: 15 correct, 1 partly correct, 3 wrong, 1 fair abstention (`results/generation_review.csv`), i.e. 75% fully correct (about 53%-89% as a 95% interval at n = 20). I repeated the review on the same 20 questions with v2's answers and got the same counts (`results/generation_review_v2.csv`). Both reviews were by one person, and I knew the v1 ratings when rating v2, so this is indicative, not a blind comparison, and cannot detect small differences.
+- **Manual correctness review.** I rated a random sample of 20 of the 51 answers (seed 42) against the scikit-learn docs: 15 correct, 1 partly correct, 3 wrong, 1 fair abstention (`results/generation_review.csv`), i.e. 75% fully correct (about 53%-89% as a 95% interval at n = 20). I repeated the review on the same 20 questions with v2's answers and got the same rating for every question (`results/generation_review_v2.csv`). Both reviews were by one person, and I knew the v1 ratings when rating v2, so this is indicative, not a blind comparison, and cannot detect small differences.
 - **Failure analysis (v1 sample).** All four answers rated wrong or partly correct had `cited_gold = False`: retrieval never surfaced the gold section. The partly correct one (q060) was an abstention on a question the docs do answer ("barely change" vs the docs' "low variance"). The three wrong answers were confident answers built on off-target passages: a faithful summary of the wrong section (q002, NaN handling), a plausible wrong guess (q050, "LDA" where the KL-divergence factorization is NMF), and an inference from silence (q026, claiming SVMs need no rescaling because the passages never mention it). So the main generation weakness is not abstaining when passages are topically close but do not contain the answer. The two wrong abstentions on the test split (q060, q076) are likely the same kind of retrieval miss. Better retrieval (the dense hybrid above; the reranker above only reorders candidates, so it cannot recover sections that were never retrieved) should help more than prompt changes.
 - **Caveats.** Single run, one small local model. All 103 prompts fit within Ollama's default 4096-token context (longest: 1,159 words, about 2,200 tokens by estimate), so truncation did not affect the results. Run with Ollama 0.40.17 and the llama3.1 8B model (digest 667b0c1932bc).
 
@@ -133,6 +133,7 @@ export ANTHROPIC_API_KEY=...                       # optionally RAG_MODEL=<model
 export OPENAI_BASE_URL=http://localhost:11434/v1 RAG_MODEL=llama3.1
 # unset ANTHROPIC_API_KEY if set; it takes priority
 ```
+
 To evaluate generation (needs one of the LLM setups above):
 
 ```
@@ -141,6 +142,7 @@ RAG_PROMPT=v1 python evaluate_generation.py --split dev   # baseline on dev
 RAG_PROMPT=v2 python evaluate_generation.py --split dev   # stricter prompt, dev
 RAG_PROMPT=v2 python evaluate_generation.py               # stricter prompt, test split (run once)
 ```
+
 To evaluate the reranker (needs `pip install sentence-transformers`):
 
 ```
@@ -169,4 +171,4 @@ fetch_corpus.py       downloads the corpus at a pinned release tag (not committe
 
 ## Data and licensing
 
-scikit-learn documentation: BSD-3-Clause (https://github.com/scikit-learn/scikit-learn), fetched at tag 1.6.1 and not redistributed here. GloVe 6B vectors (Pennington et al., 2014) are downloaded from the gensim-data release under the Public Domain Dedication and License.
+scikit-learn documentation: BSD-3-Clause (https://github.com/scikit-learn/scikit-learn), fetched at tag 1.6.1 and not redistributed here. GloVe 6B vectors (Pennington et al., 2014) are downloaded from the gensim-data release under the Public Domain Dedication and License. The code in this repository is released under the MIT License (see LICENSE).
